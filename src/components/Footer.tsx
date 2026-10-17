@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Sparkles, Calendar, MapPin, Mail, Globe } from "lucide-react";
+import Image from "next/image";
+import { Calendar, MapPin, Mail, Globe } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -9,8 +10,13 @@ export default function Footer() {
           {/* Brand Info */}
           <div className="md:col-span-1 space-y-4">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-400 via-yellow-300 to-emerald-400 flex items-center justify-center text-emerald-950">
-                <Sparkles className="w-6 h-6 fill-emerald-950 stroke-emerald-950" />
+              <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-emerald-900 border border-amber-400/40 p-1">
+                <Image
+                  src="/images/logo.png"
+                  alt="Finish Rich Africa - KWS 2026 Logo"
+                  fill
+                  className="object-contain"
+                />
               </div>
               <div>
                 <span className="font-extrabold text-xl tracking-tight text-white">
@@ -20,7 +26,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="text-xs text-emerald-200/90 leading-relaxed">
-              Presented by <strong>Finish Rich Africa (FRA)</strong>. Convener: <strong>Temilola Adeyemi</strong>.
+              Presented by <strong>Finish Rich Africa (FRA)</strong>. Convener: <strong>Dr. Temilola Adeyemi</strong>.
             </p>
             <p className="text-xs text-amber-300 font-medium">
               &quot;And God blessed them, and God said unto them, Be fruitful, and multiply, and replenish the earth, and subdue it...&quot; — Genesis 1:28
@@ -97,7 +103,7 @@ export default function Footer() {
 
         <div className="mt-12 pt-8 border-t border-emerald-900 flex flex-col sm:flex-row items-center justify-between text-xs text-emerald-400/80 gap-4">
           <p>© 2026 Kingdom Wealth Summit (KWS) | Finish Rich Africa (FRA). All rights reserved.</p>
-          <p>Convener: Temilola Adeyemi</p>
+          <p>Convener: Dr. Temilola Adeyemi</p>
         </div>
       </div>
     </footer>

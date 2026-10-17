@@ -11,7 +11,7 @@ export interface SpeakerProps {
   imageSrc: string;
   topic?: string;
   bio: string;
-  fullBio?: string;
+  fullBio?: string | string[];
   isConvener?: boolean;
 }
 
@@ -27,12 +27,19 @@ export default function SpeakerCard({
 }: SpeakerProps) {
   const [expanded, setExpanded] = useState(false);
 
+  // Normalize fullBio into array of paragraphs
+  const paragraphs = Array.isArray(fullBio)
+    ? fullBio
+    : fullBio
+    ? fullBio.split("\\n\\n").flatMap((p) => p.split("\n\n"))
+    : [];
+
   return (
     <div
       className={`relative rounded-2xl overflow-hidden backdrop-blur-xl transition-all duration-300 border ${
         isConvener
           ? "bg-gradient-to-b from-emerald-950 via-emerald-900/80 to-emerald-950 border-amber-400/50 shadow-xl shadow-amber-400/10 hover:border-amber-300"
-          : "bg-emerald-950/70 border-emerald-800/80 hover:border-amber-400/40 hover:shadow-lg"
+          : "bg-emerald-950/80 border-emerald-800 hover:border-amber-400/40 hover:shadow-lg"
       }`}
     >
       {/* Top Metallic Gold Line Accent */}
@@ -82,7 +89,7 @@ export default function SpeakerCard({
 
             <p className="text-emerald-100/90 text-sm leading-relaxed">{bio}</p>
 
-            {fullBio && (
+            {paragraphs.length > 0 && (
               <div>
                 <button
                   onClick={() => setExpanded(!expanded)}
@@ -93,8 +100,10 @@ export default function SpeakerCard({
                 </button>
 
                 {expanded && (
-                  <div className="mt-3 p-4 rounded-xl bg-emerald-950/90 border border-emerald-800 text-emerald-200 text-xs leading-relaxed space-y-2 animate-fadeIn">
-                    <p>{fullBio}</p>
+                  <div className="mt-3 p-4 rounded-xl bg-emerald-950/90 border border-emerald-800 text-emerald-200 text-xs leading-relaxed space-y-3 animate-fadeIn">
+                    {paragraphs.map((para, i) => (
+                      <p key={i}>{para}</p>
+                    ))}
                   </div>
                 )}
               </div>

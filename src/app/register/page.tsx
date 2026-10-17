@@ -120,7 +120,7 @@ export default function RegisterPage() {
               KWS 2026 Registration
             </h1>
             <p className="text-sm text-emerald-200 max-w-lg mx-auto">
-              <strong>DOMINION MANDATE</strong> (Genesis 1:28) | Convener: <strong className="text-amber-300 font-semibold">Temilola Adeyemi</strong>
+              <strong>DOMINION MANDATE</strong> (Genesis 1:28) | Convener: <strong className="text-amber-300 font-semibold">Dr. Temilola Adeyemi</strong>
             </p>
             <p className="text-xs text-amber-300 font-bold uppercase">
               28TH NOVEMBER 2026 • ERIDAN SPACE, ALAUSA IKEJA
@@ -370,7 +370,7 @@ export default function RegisterPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-emerald-200 uppercase mb-1.5">
-                      Expectations or Questions for Temilola Adeyemi &amp; Speakers
+                      Expectations or Questions for Dr. Temilola Adeyemi &amp; Speakers
                     </label>
                     <textarea
                       rows={3}

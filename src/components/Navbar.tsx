@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Sparkles, Menu, X, ArrowRight, Shield } from "lucide-react";
+import Image from "next/image";
+import { Menu, X, ArrowRight } from "lucide-react";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -13,8 +14,13 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-20">
           {/* Logo / Organizer */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-400 via-yellow-300 to-emerald-400 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-400/20 group-hover:scale-105 transition-transform duration-300">
-              <Sparkles className="w-6 h-6 fill-emerald-950 stroke-emerald-950" />
+            <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-emerald-900 border border-amber-400/40 p-1 group-hover:scale-105 transition-transform duration-300">
+              <Image
+                src="/images/logo.png"
+                alt="Finish Rich Africa - KWS 2026 Logo"
+                fill
+                className="object-contain"
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -49,14 +55,6 @@ export default function Navbar() {
 
           {/* Action CTAs */}
           <div className="hidden md:flex items-center gap-4">
-            <Link
-              href="/admin"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-emerald-200 hover:text-amber-300 transition-colors border border-emerald-800 hover:border-amber-400/40 rounded-lg"
-              title="Admin Portal"
-            >
-              <Shield className="w-3.5 h-3.5" />
-              <span>Admin</span>
-            </Link>
             <Link
               href="/register"
               className="relative inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-emerald-950 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 hover:from-yellow-300 hover:to-amber-300 shadow-md shadow-amber-400/20 transition-all duration-300 transform hover:-translate-y-0.5"
@@ -117,14 +115,6 @@ export default function Navbar() {
               className="hover:text-amber-300 py-1"
             >
               Venue &amp; Location
-            </Link>
-            <Link
-              href="/admin"
-              onClick={() => setMobileMenuOpen(false)}
-              className="hover:text-amber-300 py-1 flex items-center gap-2 text-emerald-300"
-            >
-              <Shield className="w-4 h-4" />
-              <span>Admin Dashboard</span>
             </Link>
           </nav>
           <div className="pt-2">
