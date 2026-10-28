@@ -193,13 +193,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* INTERACTIVE DOMINION BLUEPRINT QUIZ */}
-        <section className="py-14 sm:py-20 bg-emerald-950 border-b border-emerald-900">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <DominionInteractiveQuiz />
-          </div>
-        </section>
-
         {/* FEATURED ACTIVITIES HIGHLIGHTS */}
         <section id="activities" className="py-14 sm:py-20 bg-emerald-950 relative border-b border-emerald-900">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12">
@@ -280,6 +273,15 @@ export default function Home() {
           </div>
         </section>
 
+        {/* INTERACTIVE DOMINION BLUEPRINT QUIZ */}
+        <section className="py-14 sm:py-20 bg-emerald-950 border-b border-emerald-900">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6">
+            <DominionInteractiveQuiz />
+          </div>
+        </section>
+
+
+
         {/* MEET THE CONVENER SECTION */}
         <section id="convener" className="py-14 sm:py-20 bg-emerald-900/40 border-b border-emerald-800">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12">
@@ -346,9 +348,9 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12">
             <div className="text-center max-w-3xl mx-auto space-y-2 sm:space-y-3">
               <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-widest text-amber-400">
-                KEYNOTE FACILITATORS
+                GUEST &amp; KEYNOTE FACILITATORS
               </span>
-              <h2 className="text-2xl sm:text-4xl font-extrabold text-white">Guest Speakers</h2>
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-white">Guest &amp; Keynote Speakers</h2>
               <p className="text-emerald-200 text-xs sm:text-base">
                 Joining Dr. Temilola Adeyemi to deliver high-impact sessions at KWS 2026.
               </p>
@@ -360,7 +362,7 @@ export default function Home() {
               <SpeakerCard
                 name="Seyi Abiodun"
                 role="Global Wealth Advisor & Impact Investor"
-                badge="Keynote Speaker 1"
+                badge="Guest Speaker"
                 imageSrc="/images/speaker1.jpeg"
                 topic="Capital Allocation, Sustainable Investments & Wealth Without Borders"
                 bio="Seyi Abiodun is a Global Wealth Advisor and Impact Investor with over 16 years of executive experience across corporate governance, finance, administration, and strategic planning, working closely with Group CEOs, Board Chairmen, and Presidents."
@@ -373,17 +375,20 @@ export default function Home() {
                 ]}
               />
 
-              {/* Speaker 2 Placeholder */}
+              {/* Speaker 2 */}
               <SpeakerCard
-                name="Keynote Guest Speaker 2"
-                role="Kingdom Economist & Market Facilitator"
-                badge="Guest Speaker 2"
-                imageSrc="/images/speaker-2.svg"
-                topic="Dominion in Marketplaces & The Money Game"
-                bio="An accomplished entrepreneur and financial literacy advocate dedicated to training kingdom visionaries to dominate market sectors through strategic innovation."
+                name="Prophet Abraham Adebayo"
+                role="Set Man, Grace for all men international Ministry"
+                badge="Keynote Speaker"
+                imageSrc="/images/keynote.jpeg"
+                topic="The Path of the Fathers & Kingdom Influence"
+                bio="Called and ordained a Prophet by the Lord, Abraham Adebayo is the set man of Grace for all men international Ministry, based in Erin-ile Kwara State."
                 fullBio={[
-                  "Speaker 2 will lead the interactive Money Game simulation and co-anchor the Ask the Experts session alongside Dr. Temilola Adeyemi and Seyi Abiodun.",
-                  "More details and bio for Guest Speaker 2 will be released soon as we finalize the complete summit lineup.",
+                  "Called and ordained a Prophet by the Lord, Abraham Adebayo is the set man of Grace for all men international Ministry, based in Erin-ile Kwara State.",
+                  "He is committed to discipleship, and compelling men to live a life of consecration, purity, power and prosperity in fulfilling their ministry in God, a man sent to raise kingdom generals from the country side, men whose influence will be felt from the corner of the earth to the center.",
+                  "Prophet Abraham Adebayo is the convener of the 72 hours Intercession for C&S Churches, a meeting where incense is raised unto the Lord for the revival of the C&S Church, he also convenes The Path of the Fathers Conference (PFC), a meeting committed to preserving the ancient path trod by fathers of old in the christian faith.",
+                  "Though a minister in the C&S church, Prophet Abraham Adebayo is a servant of God sent for the edification of the body of Christ. He is presently the shepherd of his local assembly and the secretary of the Oyun ministers forum; an umbrella body for all gospel ministers in Oyun Local Government of Kwara state.",
+                  "He is married and blessed with wonderful children."
                 ]}
               />
             </div>

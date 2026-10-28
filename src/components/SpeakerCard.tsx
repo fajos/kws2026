@@ -74,7 +74,7 @@ export default function SpeakerCard({
               <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-0.5">
                 {isConvener && <Sparkles className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />}
                 <span className="text-[11px] sm:text-xs font-bold tracking-widest uppercase text-amber-300">
-                  {isConvener ? "Convener & Host" : "Guest Keynote"}
+                  {isConvener ? "Convener & Host" : badge}
                 </span>
               </div>
               <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">{name}</h3>
