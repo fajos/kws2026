@@ -9,17 +9,16 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-md bg-emerald-950/90 border-b border-amber-400/30 text-white shadow-xl shadow-black/30">
+    <header className="sticky top-0 z-50 backdrop-blur-md bg-emerald-950/90 border-b border-amber-400/30 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo / Organizer */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-emerald-900 border border-amber-400/50 p-1 group-hover:scale-105 transition-transform duration-300 shadow-lg shadow-amber-400/10">
+            <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-emerald-900 border border-amber-400/40 p-1 group-hover:scale-105 transition-transform duration-300">
               <Image
                 src="/images/logo.png"
                 alt="Finish Rich Africa - KWS 2026 Logo"
                 fill
-                sizes="(max-width: 640px) 48px, 64px"
                 className="object-contain"
               />
             </div>
@@ -58,7 +57,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-4">
             <Link
               href="/register"
-              className="relative inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-emerald-950 btn-gold-3d transition-all duration-300 transform hover:-translate-y-0.5"
+              className="relative inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-emerald-950 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 hover:from-yellow-300 hover:to-amber-300 shadow-md shadow-amber-400/20 transition-all duration-300 transform hover:-translate-y-0.5"
             >
               <span>Register Now</span>
               <ArrowRight className="w-4 h-4" />
@@ -122,7 +121,7 @@ export default function Navbar() {
             <Link
               href="/register"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-emerald-950 btn-gold-3d text-center"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-emerald-950 bg-gradient-to-r from-amber-400 to-yellow-300 text-center"
             >
               <span>Register Now</span>
               <ArrowRight className="w-4 h-4" />

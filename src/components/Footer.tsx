@@ -4,18 +4,17 @@ import { Calendar, MapPin, Mail, Globe } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="bg-emerald-950 border-t border-emerald-800/80 text-emerald-200/80 shadow-2xl">
+    <footer className="bg-emerald-950 border-t border-emerald-800/80 text-emerald-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand Info */}
           <div className="md:col-span-1 space-y-4">
             <Link href="/" className="flex items-center gap-3">
-              <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-emerald-900 border border-amber-400/50 p-1 shadow-lg shadow-amber-400/10">
+              <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-emerald-900 border border-amber-400/40 p-1">
                 <Image
                   src="/images/logo.png"
                   alt="Finish Rich Africa - KWS 2026 Logo"
                   fill
-                  sizes="(max-width: 640px) 48px, 64px"
                   className="object-contain"
                 />
               </div>
