@@ -312,6 +312,7 @@ export default function AdminPage() {
                         <th className="py-3.5 px-4">Full Name</th>
                         <th className="py-3.5 px-4">Contact Info</th>
                         <th className="py-3.5 px-4">Occupation / Location</th>
+                        <th className="py-3.5 px-4">Expectations</th>
                         <th className="py-3.5 px-4">Attendance</th>
                         <th className="py-3.5 px-4">Date Registered</th>
                       </tr>
@@ -348,6 +349,11 @@ export default function AdminPage() {
                             <td className="py-3.5 px-4 space-y-0.5">
                               <div className="text-emerald-100">{reg.occupation || "N/A"}</div>
                               <div className="text-emerald-400 text-[11px]">{reg.city_country || "N/A"}</div>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <div className="text-emerald-200 max-w-xs truncate" title={reg.expectations || "N/A"}>
+                                {reg.expectations || "N/A"}
+                              </div>
                             </td>
                             <td className="py-3.5 px-4">
                               <span
