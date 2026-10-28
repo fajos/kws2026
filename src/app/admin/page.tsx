@@ -181,7 +181,7 @@ export default function AdminPage() {
                   <button
                     type="submit"
                     disabled={loginLoading}
-                    className="w-full py-3.5 px-6 rounded-xl font-black text-xs uppercase text-emerald-950 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 hover:from-yellow-300 hover:to-amber-300 transition-all shadow-lg shadow-amber-400/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-3.5 px-6 rounded-xl font-black text-xs uppercase text-emerald-950 bg-linear-to-r from-amber-400 via-yellow-300 to-amber-400 hover:from-yellow-300 hover:to-amber-300 transition-all shadow-lg shadow-amber-400/20 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {loginLoading ? (
                       <span>Verifying Passcode...</span>
@@ -194,14 +194,7 @@ export default function AdminPage() {
                   </button>
                 </form>
 
-                <div className="pt-2 border-t border-emerald-800 text-center">
-                  <p className="text-[11px] text-emerald-400/80">
-                    Default Passcode: <code className="text-amber-300 font-mono bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-800">kws2026admin</code>
-                  </p>
-                  <p className="text-[10px] text-emerald-500 mt-1">
-                    (Set <code className="text-emerald-300">ADMIN_PASSCODE</code> env variable in Vercel to customize)
-                  </p>
-                </div>
+               
               </div>
             </div>
           ) : (

@@ -1,27 +1,130 @@
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    --background: #020617;
-    --foreground: #f8fafc;
-  }
+:root {
+  color-scheme: dark;
+  --background: #022c22;
+  --foreground: #f8fafc;
+}
 
-  body {
-    background-color: var(--background);
-    color: var(--foreground);
-    font-family: var(--font-geist-sans), system-ui, sans-serif;
+html,
+body {
+  color-scheme: dark;
+  background-color: #022c22;
+  color: #f8fafc;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* 3D Glassmorphism & Depth Cards */
+.card-3d {
+  background: linear-gradient(145deg, rgba(2, 44, 34, 0.95) 0%, rgba(6, 78, 59, 0.75) 100%);
+  box-shadow:
+    0 20px 30px -10px rgba(0, 0, 0, 0.7),
+    0 0 15px 2px rgba(250, 204, 21, 0.15),
+    inset 0 1px 1px 0 rgba(254, 240, 138, 0.3);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.card-3d:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow:
+    0 30px 45px -12px rgba(0, 0, 0, 0.85),
+    0 0 25px 6px rgba(250, 204, 21, 0.35),
+    inset 0 1px 2px 0 rgba(254, 240, 138, 0.6);
+}
+
+/* 3D Gold Metallic Buttons */
+.btn-gold-3d {
+  background: linear-gradient(180deg, #fef08a 0%, #facc15 50%, #d97706 100%);
+  color: #022c22;
+  font-weight: 900;
+  border-bottom: 4px solid #b45309;
+  box-shadow:
+    0 10px 20px -5px rgba(245, 158, 11, 0.4),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+  transition: all 0.25s ease;
+}
+
+.btn-gold-3d:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 15px 25px -5px rgba(245, 158, 11, 0.6),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+  filter: brightness(1.05);
+}
+
+.btn-gold-3d:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+  box-shadow: 0 5px 10px -2px rgba(245, 158, 11, 0.3);
+}
+
+/* 3D Image Frame Glow */
+.image-3d-frame {
+  box-shadow:
+    0 15px 25px -5px rgba(0, 0, 0, 0.8),
+    0 0 20px 3px rgba(250, 204, 21, 0.3),
+    inset 0 0 10px 0 rgba(254, 240, 138, 0.4);
+}
+
+/* Animations */
+@keyframes float3D {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
   }
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.animate-float {
+  animation: float3D 6s ease-in-out infinite;
+}
+
+.animate-pulseGlow {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+.text-shimmer {
+  background: linear-gradient(90deg, #fef08a 0%, #ffffff 50%, #facc15 100%);
+  background-size: 200% auto;
+  color: #000;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
 }
 
 .animate-fadeIn {
