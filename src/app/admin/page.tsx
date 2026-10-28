@@ -229,7 +229,7 @@ export default function AdminPage() {
                   </button>
                   <button
                     onClick={handleExportCSV}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs text-emerald-950 bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-yellow-300 hover:to-amber-300 transition-all shadow-md"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs text-emerald-950 bg-linear-to-r from-amber-400 to-yellow-300 hover:from-yellow-300 hover:to-amber-300 transition-all shadow-md"
                   >
                     <Download className="w-4 h-4" />
                     <span>Export CSV</span>

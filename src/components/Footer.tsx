@@ -97,7 +97,7 @@ export default function Footer() {
               className="flex items-center gap-2 text-xs text-amber-300 hover:text-amber-200 font-semibold transition-colors"
             >
               <Mail className="w-4 h-4" />
-              <span>info@kingdomwealthsummit.com</span>
+              <span>temilolaoyewale.c@gmail.com</span>
             </a>
           </div>
         </div>
