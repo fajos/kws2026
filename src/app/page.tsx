@@ -83,7 +83,7 @@ export default function Home() {
 
               {/* Subtitle */}
               <p className="text-sm sm:text-lg text-emerald-100 max-w-2xl mx-auto font-normal leading-relaxed px-2">
-                Step into financial mastery, spiritual alignment, and kingdom economic dominance. Convened by <strong className="text-amber-300 font-semibold">Dr. Temilola Adeyemi</strong> and guest speakers including <strong className="text-amber-300 font-semibold">Seyi Abiodun</strong>.
+                Step into financial mastery, spiritual alignment, and kingdom economic dominance. Convened by <strong className="text-amber-300 font-semibold">Dr. Temilola Adeyemi</strong> alongside guest and keynote speakers including <strong className="text-amber-300 font-semibold">Seyi Abiodun</strong> and <strong className="text-amber-300 font-semibold">Prophet Abraham Adebayo</strong>.
               </p>
 
               {/* Key Event Meta (Date & Venue) */}
