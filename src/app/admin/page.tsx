@@ -28,7 +28,7 @@ import {
   ExternalLink,
   ChevronDown,
 } from "lucide-react";
-import type { AdminJournalMember, JournalAdminStats } from "@/lib/db";
+import type { AdminJournalMember, JournalAdminStats } from "@/lib/adminJournal";
 
 interface Registration {
   id: number;
