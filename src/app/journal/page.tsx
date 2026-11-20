@@ -309,7 +309,7 @@ function createDefaultGoalEntry(area: LifeArea, isCustom: boolean = false, targe
 function createDefaultJournalState(year: number): JournalState {
   const goals: Record<string, GoalEntry> = {};
   LIFE_AREAS.forEach((item) => {
-    goals[item.key] = createDefaultGoalEntry(item.key);
+    goals[item.key] = createDefaultGoalEntry(item.key, false, year);
   });
   return {
     year,
@@ -544,7 +544,7 @@ export default function JournalPage() {
       return;
     }
 
-    const newEntry = createDefaultGoalEntry(trimmedName, true);
+    const newEntry = createDefaultGoalEntry(trimmedName, true, journalState.year);
     newEntry.text = newGoalText.trim();
     newEntry.priority = newGoalPriority;
 
@@ -670,7 +670,7 @@ export default function JournalPage() {
   function handleApplyDecomposition() {
     if (!decomposedPreview) return;
 
-    const currentGoal = journalState.goals[aiTargetArea] || createDefaultGoalEntry(aiTargetArea);
+    const currentGoal = journalState.goals[aiTargetArea] || createDefaultGoalEntry(aiTargetArea, false, journalState.year);
 
     // Populate milestones, why, support
     const updatedGoal: GoalEntry = {
@@ -852,11 +852,11 @@ export default function JournalPage() {
     if (!targetGoals) {
       targetGoals = {} as any;
       LIFE_AREAS.forEach((item) => {
-        targetGoals[item.key] = createDefaultGoalEntry(item.key);
+        targetGoals[item.key] = createDefaultGoalEntry(item.key, false, yr);
       });
       if (journalState.customAreas) {
         journalState.customAreas.forEach((ca) => {
-          targetGoals[ca] = createDefaultGoalEntry(ca, true);
+          targetGoals[ca] = createDefaultGoalEntry(ca, true, yr);
         });
       }
       newYearsData[yr] = targetGoals;
@@ -885,7 +885,7 @@ export default function JournalPage() {
   const pillLight = isDark ? "bg-[#2B1C22] text-[#E5B8C2] border-[#44232C]" : "bg-[#FAF4EB] text-[#7A283C] border-[#F0E4D8]";
 
   const activeAreas = getActiveGoalAreas(journalState);
-  const currentGoal = journalState.goals[selectedArea] || (activeAreas[0] ? journalState.goals[activeAreas[0].key] : null) || createDefaultGoalEntry(selectedArea);
+  const currentGoal = journalState.goals[selectedArea] || (activeAreas[0] ? journalState.goals[activeAreas[0].key] : null) || createDefaultGoalEntry(selectedArea, false, journalState.year);
   const currentMonthPlan = currentGoal.monthPlans[selectedMonth] || currentGoal.monthPlans[1];
   const weeksForSelectedMonth = getWeeksForMonth(journalState.year, selectedMonth);
   const safeWeekIndex = Math.min(Math.max(1, selectedWeek), weeksForSelectedMonth.length);
@@ -1319,7 +1319,7 @@ export default function JournalPage() {
             {viewMode === "cards" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {activeAreas.map((item) => {
-                  const goal = journalState.goals[item.key] || createDefaultGoalEntry(item.key);
+                  const goal = journalState.goals[item.key] || createDefaultGoalEntry(item.key, false, journalState.year);
                   const Icon = item.icon;
 
                   return (
