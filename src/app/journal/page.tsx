@@ -37,6 +37,7 @@ import {
   AlertTriangle,
   ShieldAlert,
 } from "lucide-react";
+import { getWeeksForMonth } from "@/lib/journalCalendar";
 
 // -------------------------------------------------------------
 // Types & Constants
@@ -252,7 +253,7 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December"
 ];
 
-function createDefaultGoalEntry(area: LifeArea, isCustom: boolean = false): GoalEntry {
+function createDefaultGoalEntry(area: LifeArea, isCustom: boolean = false, targetYear: number = 2026): GoalEntry {
   const quarterPlans: Record<1 | 2 | 3 | 4, QuarterPlan> = {
     1: { quarter: 1, theme: "", month1: [], month2: [], month3: [] },
     2: { quarter: 2, theme: "", month1: [], month2: [], month3: [] },
@@ -262,6 +263,18 @@ function createDefaultGoalEntry(area: LifeArea, isCustom: boolean = false): Goal
 
   const monthPlans: Record<number, MonthPlan> = {};
   for (let m = 1; m <= 12; m++) {
+    const monthWeeks = getWeeksForMonth(targetYear, m);
+    const weeks: Record<number, WeekPlan> = {};
+    monthWeeks.forEach((wInfo) => {
+      weeks[wInfo.weekIndex] = {
+        weekIndex: wInfo.weekIndex,
+        weekOf: `Week ${wInfo.weekIndex} (${wInfo.shortLabel})`,
+        topPriorities: [],
+        days: { monday: "", tuesday: "", wednesday: "", thursday: "", friday: "", saturday: "", sunday: "" },
+        carryForward: "",
+      };
+    });
+
     monthPlans[m] = {
       monthIndex: m,
       monthName: MONTH_NAMES[m - 1],
@@ -275,43 +288,7 @@ function createDefaultGoalEntry(area: LifeArea, isCustom: boolean = false): Goal
         carryForwardItems: [],
         reflection: { oneWin: "", oneLesson: "", gratefulFor: "" },
       },
-      weeks: {
-        1: {
-          weekIndex: 1,
-          weekOf: "Week 1",
-          topPriorities: [],
-          days: { monday: "", tuesday: "", wednesday: "", thursday: "", friday: "", saturday: "", sunday: "" },
-          carryForward: "",
-        },
-        2: {
-          weekIndex: 2,
-          weekOf: "Week 2",
-          topPriorities: [],
-          days: { monday: "", tuesday: "", wednesday: "", thursday: "", friday: "", saturday: "", sunday: "" },
-          carryForward: "",
-        },
-        3: {
-          weekIndex: 3,
-          weekOf: "Week 3",
-          topPriorities: [],
-          days: { monday: "", tuesday: "", wednesday: "", thursday: "", friday: "", saturday: "", sunday: "" },
-          carryForward: "",
-        },
-        4: {
-          weekIndex: 4,
-          weekOf: "Week 4",
-          topPriorities: [],
-          days: { monday: "", tuesday: "", wednesday: "", thursday: "", friday: "", saturday: "", sunday: "" },
-          carryForward: "",
-        },
-        5: {
-          weekIndex: 5,
-          weekOf: "Week 5",
-          topPriorities: [],
-          days: { monday: "", tuesday: "", wednesday: "", thursday: "", friday: "", saturday: "", sunday: "" },
-          carryForward: "",
-        },
-      },
+      weeks,
     };
   }
 
@@ -742,34 +719,42 @@ export default function JournalPage() {
             weeks: {},
           };
 
-          const populatedWeeks: Record<number, WeekPlan> = { ...(currentMonth.weeks || {}) };
+          const monthWeeks = getWeeksForMonth(journalState.year, m);
+          const populatedWeeks: Record<number, WeekPlan> = {};
 
-          if (mp.weeks) {
-            for (let w = 1; w <= 5; w++) {
-              const dw = mp.weeks[w];
-              if (dw) {
-                populatedWeeks[w] = {
-                  weekIndex: w,
-                  weekOf: `Week ${w}`,
-                  topPriorities: (dw.topPriorities || []).map((t: string, i: number) => ({
-                    id: `wp-${m}-${w}-${i}`,
-                    text: t,
-                    completed: false,
-                  })),
-                  days: {
-                    monday: dw.days?.monday || "",
-                    tuesday: dw.days?.tuesday || "",
-                    wednesday: dw.days?.wednesday || "",
-                    thursday: dw.days?.thursday || "",
-                    friday: dw.days?.friday || "",
-                    saturday: dw.days?.saturday || "",
-                    sunday: dw.days?.sunday || "",
-                  },
-                  carryForward: dw.carryForward || "",
-                };
-              }
+          monthWeeks.forEach((wInfo) => {
+            const w = wInfo.weekIndex;
+            const dw = mp.weeks?.[w];
+            if (dw) {
+              populatedWeeks[w] = {
+                weekIndex: w,
+                weekOf: `Week ${w} (${wInfo.shortLabel})`,
+                topPriorities: (dw.topPriorities || []).map((t: string, i: number) => ({
+                  id: `wp-${m}-${w}-${i}`,
+                  text: t,
+                  completed: false,
+                })),
+                days: {
+                  monday: dw.days?.monday || "",
+                  tuesday: dw.days?.tuesday || "",
+                  wednesday: dw.days?.wednesday || "",
+                  thursday: dw.days?.thursday || "",
+                  friday: dw.days?.friday || "",
+                  saturday: dw.days?.saturday || "",
+                  sunday: dw.days?.sunday || "",
+                },
+                carryForward: dw.carryForward || "",
+              };
+            } else {
+              populatedWeeks[w] = currentMonth.weeks?.[w] || {
+                weekIndex: w,
+                weekOf: `Week ${w} (${wInfo.shortLabel})`,
+                topPriorities: [],
+                days: { monday: "", tuesday: "", wednesday: "", thursday: "", friday: "", saturday: "", sunday: "" },
+                carryForward: "",
+              };
             }
-          }
+          });
 
           updatedGoal.monthPlans[m] = {
             ...currentMonth,
@@ -902,7 +887,15 @@ export default function JournalPage() {
   const activeAreas = getActiveGoalAreas(journalState);
   const currentGoal = journalState.goals[selectedArea] || (activeAreas[0] ? journalState.goals[activeAreas[0].key] : null) || createDefaultGoalEntry(selectedArea);
   const currentMonthPlan = currentGoal.monthPlans[selectedMonth] || currentGoal.monthPlans[1];
-  const currentWeekPlan = currentMonthPlan.weeks[selectedWeek] || currentMonthPlan.weeks[1];
+  const weeksForSelectedMonth = getWeeksForMonth(journalState.year, selectedMonth);
+  const safeWeekIndex = Math.min(Math.max(1, selectedWeek), weeksForSelectedMonth.length);
+  const currentWeekPlan = currentMonthPlan.weeks[safeWeekIndex] || currentMonthPlan.weeks[1] || {
+    weekIndex: safeWeekIndex,
+    weekOf: `Week ${safeWeekIndex}`,
+    topPriorities: [],
+    days: { monday: "", tuesday: "", wednesday: "", thursday: "", friday: "", saturday: "", sunday: "" },
+    carryForward: "",
+  };
   const currentQuarterPlan = currentGoal.quarterPlans[selectedQuarter] || currentGoal.quarterPlans[1];
 
   useEffect(() => {
@@ -2030,7 +2023,14 @@ export default function JournalPage() {
                 <span className="text-xs font-bold opacity-60">Month:</span>
                 <select
                   value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
+                  onChange={(e) => {
+                    const nextM = parseInt(e.target.value, 10);
+                    setSelectedMonth(nextM);
+                    const nextWeeks = getWeeksForMonth(journalState.year, nextM);
+                    if (selectedWeek > nextWeeks.length) {
+                      setSelectedWeek(nextWeeks.length);
+                    }
+                  }}
                   className={`text-xs font-semibold px-2 py-1 rounded-lg border outline-none ${cardBg}`}
                 >
                   {MONTH_NAMES.map((name, idx) => (
@@ -2043,15 +2043,16 @@ export default function JournalPage() {
                 <div className="h-4 w-px bg-slate-300 dark:bg-slate-700 mx-1" />
 
                 <span className="text-xs font-bold opacity-60">Week:</span>
-                {[1, 2, 3, 4, 5].map((w) => (
+                {weeksForSelectedMonth.map((wInfo) => (
                   <button
-                    key={w}
-                    onClick={() => setSelectedWeek(w)}
+                    key={wInfo.weekIndex}
+                    onClick={() => setSelectedWeek(wInfo.weekIndex)}
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                      selectedWeek === w ? primaryBg : pillLight
+                      safeWeekIndex === wInfo.weekIndex ? primaryBg : pillLight
                     }`}
+                    title={wInfo.dateRange}
                   >
-                    W{w}
+                    W{wInfo.weekIndex} <span className="text-[10px] opacity-75 font-normal ml-0.5 hidden md:inline">({wInfo.shortLabel})</span>
                   </button>
                 ))}
               </div>
@@ -2062,7 +2063,7 @@ export default function JournalPage() {
             <div className={`p-6 rounded-2xl border ${cardBg} shadow-sm space-y-6`}>
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider opacity-60">
-                  {MONTH_NAMES[selectedMonth - 1]} • Week {selectedWeek}
+                  {MONTH_NAMES[selectedMonth - 1]} • Week {safeWeekIndex} ({weeksForSelectedMonth.find((w) => w.weekIndex === safeWeekIndex)?.shortLabel || ""})
                 </span>
                 <h2 className="font-serif font-bold text-2xl">Weekly Planner (Monday to Sunday)</h2>
               </div>
@@ -2101,7 +2102,7 @@ export default function JournalPage() {
                               ...currentMonthPlan,
                               weeks: {
                                 ...currentMonthPlan.weeks,
-                                [selectedWeek]: updatedWeek,
+                                [safeWeekIndex]: updatedWeek,
                               },
                             },
                           },
@@ -2138,7 +2139,7 @@ export default function JournalPage() {
                           ...currentMonthPlan,
                           weeks: {
                             ...currentMonthPlan.weeks,
-                            [selectedWeek]: updatedWeek,
+                            [safeWeekIndex]: updatedWeek,
                           },
                         },
                       },
@@ -2707,7 +2708,7 @@ export default function JournalPage() {
 
                   <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 font-semibold flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Full cascading coverage: 4 Quarters, 12 Monthly roadmaps, and all 52 Weekly Schedules (Weeks 1–5 for every month)</span>
+                    <span>Full calendar coverage: 4 Quarters, 12 Months, and exact Weekly Schedules (4 or 5 weeks per month matching the calendar)</span>
                   </div>
 
                   <div className="pt-2">
