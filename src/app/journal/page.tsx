@@ -670,131 +670,137 @@ export default function JournalPage() {
   function handleApplyDecomposition() {
     if (!decomposedPreview) return;
 
-    const currentGoal = journalState.goals[aiTargetArea] || createDefaultGoalEntry(aiTargetArea, false, journalState.year);
+    try {
+      const currentGoal = journalState.goals[aiTargetArea] || createDefaultGoalEntry(aiTargetArea, false, journalState.year);
 
-    // Populate milestones, why, support
-    const updatedGoal: GoalEntry = {
-      ...currentGoal,
-      text: aiGoalText,
-      whyItMatters: decomposedPreview.whyItMatters || currentGoal.whyItMatters,
-      supportNeeded: decomposedPreview.supportNeeded || currentGoal.supportNeeded,
-      milestones: {
-        q1: decomposedPreview.milestones?.q1 || currentGoal.milestones.q1,
-        q2: decomposedPreview.milestones?.q2 || currentGoal.milestones.q2,
-        q3: decomposedPreview.milestones?.q3 || currentGoal.milestones.q3,
-        q4: decomposedPreview.milestones?.q4 || currentGoal.milestones.q4,
-      },
-      quarterPlans: { ...currentGoal.quarterPlans },
-      monthPlans: { ...currentGoal.monthPlans },
-    };
-
-    // Apply Quarters
-    if (decomposedPreview.quarterPlans) {
-      for (const q of [1, 2, 3, 4] as const) {
-        const qp = decomposedPreview.quarterPlans[q];
-        if (qp) {
-          updatedGoal.quarterPlans[q] = {
-            quarter: q,
-            theme: qp.theme || updatedGoal.quarterPlans[q]?.theme || "",
-            month1: (qp.month1 || []).map((t: string, i: number) => ({ id: `m1-${i}`, text: t, completed: false })),
-            month2: (qp.month2 || []).map((t: string, i: number) => ({ id: `m2-${i}`, text: t, completed: false })),
-            month3: (qp.month3 || []).map((t: string, i: number) => ({ id: `m3-${i}`, text: t, completed: false })),
-          };
-        }
-      }
-    }
-
-    // Apply Months & Weeks (All 12 Months, All Weeks 1 to 5)
-    if (decomposedPreview.monthPlans) {
-      for (let m = 1; m <= 12; m++) {
-        const mp = decomposedPreview.monthPlans[m];
-        if (mp) {
-          const currentMonth = updatedGoal.monthPlans[m] || {
-            monthIndex: m,
-            monthName: MONTH_NAMES[m - 1],
-            keyGoals: [],
-            todos: [],
-            notes: "",
-            review: { whatIAchieved: "", whatWasLeftUndone: "", whatGotInTheWay: "", carryForwardItems: [], reflection: { oneWin: "", oneLesson: "", gratefulFor: "" } },
-            weeks: {},
-          };
-
-          const monthWeeks = getWeeksForMonth(journalState.year, m);
-          const populatedWeeks: Record<number, WeekPlan> = {};
-
-          monthWeeks.forEach((wInfo) => {
-            const w = wInfo.weekIndex;
-            const dw = mp.weeks?.[w];
-            if (dw) {
-              populatedWeeks[w] = {
-                weekIndex: w,
-                weekOf: `Week ${w} (${wInfo.shortLabel})`,
-                topPriorities: (dw.topPriorities || []).map((t: string, i: number) => ({
-                  id: `wp-${m}-${w}-${i}`,
-                  text: t,
-                  completed: false,
-                })),
-                days: {
-                  monday: dw.days?.monday || "",
-                  tuesday: dw.days?.tuesday || "",
-                  wednesday: dw.days?.wednesday || "",
-                  thursday: dw.days?.thursday || "",
-                  friday: dw.days?.friday || "",
-                  saturday: dw.days?.saturday || "",
-                  sunday: dw.days?.sunday || "",
-                },
-                carryForward: dw.carryForward || "",
-              };
-            } else {
-              populatedWeeks[w] = currentMonth.weeks?.[w] || {
-                weekIndex: w,
-                weekOf: `Week ${w} (${wInfo.shortLabel})`,
-                topPriorities: [],
-                days: { monday: "", tuesday: "", wednesday: "", thursday: "", friday: "", saturday: "", sunday: "" },
-                carryForward: "",
-              };
-            }
-          });
-
-          updatedGoal.monthPlans[m] = {
-            ...currentMonth,
-            keyGoals: (mp.keyGoals || []).map((t: string, i: number) => ({ id: `kg-${m}-${i}`, text: t, completed: false })),
-            todos: (mp.todos || []).map((t: string, i: number) => ({ id: `td-${m}-${i}`, text: t, completed: false })),
-            notes: mp.notes || currentMonth.notes || "",
-            weeks: populatedWeeks,
-          };
-        }
-      }
-    }
-
-    // Apply Sample Week override to Month 1, Week 1 if explicitly present
-    if (decomposedPreview.sampleWeek && updatedGoal.monthPlans[1]?.weeks?.[1]) {
-      updatedGoal.monthPlans[1].weeks[1] = {
-        ...updatedGoal.monthPlans[1].weeks[1],
-        topPriorities: (decomposedPreview.sampleWeek.topPriorities || []).map((t: string, i: number) => ({
-          id: `wp-1-1-${i}`,
-          text: t,
-          completed: false,
-        })),
-        days: {
-          ...updatedGoal.monthPlans[1].weeks[1].days,
-          ...decomposedPreview.sampleWeek.days,
+      // Populate milestones, why, support
+      const updatedGoal: GoalEntry = {
+        ...currentGoal,
+        text: aiGoalText,
+        whyItMatters: decomposedPreview.whyItMatters || currentGoal.whyItMatters || "",
+        supportNeeded: decomposedPreview.supportNeeded || currentGoal.supportNeeded || "",
+        milestones: {
+          q1: decomposedPreview.milestones?.q1 || currentGoal.milestones?.q1 || "",
+          q2: decomposedPreview.milestones?.q2 || currentGoal.milestones?.q2 || "",
+          q3: decomposedPreview.milestones?.q3 || currentGoal.milestones?.q3 || "",
+          q4: decomposedPreview.milestones?.q4 || currentGoal.milestones?.q4 || "",
         },
-        carryForward: decomposedPreview.sampleWeek.carryForward || updatedGoal.monthPlans[1].weeks[1].carryForward || "",
+        quarterPlans: { ...(currentGoal.quarterPlans || {}) },
+        monthPlans: { ...(currentGoal.monthPlans || {}) },
       };
+
+      // Apply Quarters
+      if (decomposedPreview.quarterPlans) {
+        for (const q of [1, 2, 3, 4] as const) {
+          const qp = decomposedPreview.quarterPlans[q];
+          if (qp) {
+            updatedGoal.quarterPlans[q] = {
+              quarter: q,
+              theme: qp.theme || updatedGoal.quarterPlans[q]?.theme || "",
+              month1: (qp.month1 || []).map((t: string, i: number) => ({ id: `m1-${i}`, text: t, completed: false })),
+              month2: (qp.month2 || []).map((t: string, i: number) => ({ id: `m2-${i}`, text: t, completed: false })),
+              month3: (qp.month3 || []).map((t: string, i: number) => ({ id: `m3-${i}`, text: t, completed: false })),
+            };
+          }
+        }
+      }
+
+      // Apply Months & Weeks (All 12 Months, All Weeks 1 to 5)
+      if (decomposedPreview.monthPlans) {
+        for (let m = 1; m <= 12; m++) {
+          const mp = decomposedPreview.monthPlans[m];
+          if (mp) {
+            const currentMonth = updatedGoal.monthPlans[m] || {
+              monthIndex: m,
+              monthName: MONTH_NAMES[m - 1],
+              keyGoals: [],
+              todos: [],
+              notes: "",
+              review: { whatIAchieved: "", whatWasLeftUndone: "", whatGotInTheWay: "", carryForwardItems: [], reflection: { oneWin: "", oneLesson: "", gratefulFor: "" } },
+              weeks: {},
+            };
+
+            const monthWeeks = getWeeksForMonth(journalState.year, m);
+            const populatedWeeks: Record<number, WeekPlan> = {};
+
+            monthWeeks.forEach((wInfo) => {
+              const w = wInfo.weekIndex;
+              const dw = mp.weeks?.[w];
+              if (dw) {
+                populatedWeeks[w] = {
+                  weekIndex: w,
+                  weekOf: `Week ${w} (${wInfo.shortLabel})`,
+                  topPriorities: (dw.topPriorities || []).map((t: string, i: number) => ({
+                    id: `wp-${m}-${w}-${i}`,
+                    text: t,
+                    completed: false,
+                  })),
+                  days: {
+                    monday: dw.days?.monday || "",
+                    tuesday: dw.days?.tuesday || "",
+                    wednesday: dw.days?.wednesday || "",
+                    thursday: dw.days?.thursday || "",
+                    friday: dw.days?.friday || "",
+                    saturday: dw.days?.saturday || "",
+                    sunday: dw.days?.sunday || "",
+                  },
+                  carryForward: dw.carryForward || "",
+                };
+              } else {
+                populatedWeeks[w] = currentMonth.weeks?.[w] || {
+                  weekIndex: w,
+                  weekOf: `Week ${w} (${wInfo.shortLabel})`,
+                  topPriorities: [],
+                  days: { monday: "", tuesday: "", wednesday: "", thursday: "", friday: "", saturday: "", sunday: "" },
+                  carryForward: "",
+                };
+              }
+            });
+
+            updatedGoal.monthPlans[m] = {
+              ...currentMonth,
+              keyGoals: (mp.keyGoals || []).map((t: string, i: number) => ({ id: `kg-${m}-${i}`, text: t, completed: false })),
+              todos: (mp.todos || []).map((t: string, i: number) => ({ id: `td-${m}-${i}`, text: t, completed: false })),
+              notes: mp.notes || currentMonth.notes || "",
+              weeks: populatedWeeks,
+            };
+          }
+        }
+      }
+
+      // Apply Sample Week override to Month 1, Week 1 if explicitly present
+      if (decomposedPreview.sampleWeek && updatedGoal.monthPlans[1]?.weeks?.[1]) {
+        updatedGoal.monthPlans[1].weeks[1] = {
+          ...updatedGoal.monthPlans[1].weeks[1],
+          topPriorities: (decomposedPreview.sampleWeek.topPriorities || []).map((t: string, i: number) => ({
+            id: `wp-1-1-${i}`,
+            text: t,
+            completed: false,
+          })),
+          days: {
+            ...updatedGoal.monthPlans[1].weeks[1].days,
+            ...decomposedPreview.sampleWeek.days,
+          },
+          carryForward: decomposedPreview.sampleWeek.carryForward || updatedGoal.monthPlans[1].weeks[1].carryForward || "",
+        };
+      }
+
+      const nextState: JournalState = {
+        ...journalState,
+        goals: {
+          ...journalState.goals,
+          [aiTargetArea]: updatedGoal,
+        },
+      };
+
+      triggerSave(nextState);
+      setShowAiModal(false);
+      setDecomposedPreview(null);
+    } catch (err) {
+      console.error("Failed to apply decomposition:", err);
+      setShowAiModal(false);
+      setDecomposedPreview(null);
     }
-
-    const nextState: JournalState = {
-      ...journalState,
-      goals: {
-        ...journalState.goals,
-        [aiTargetArea]: updatedGoal,
-      },
-    };
-
-    triggerSave(nextState);
-    setShowAiModal(false);
-    setDecomposedPreview(null);
   }
 
   // Email Reminders Save & Test Send
@@ -2674,7 +2680,7 @@ export default function JournalPage() {
                 <div className="mt-4 p-4 rounded-xl border border-amber-400/40 bg-amber-400/5 space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-amber-400/20">
                     <span className="font-serif font-bold text-sm text-amber-500">
-                      Generated Plan Preview ({decomposedPreview.source})
+                      Generated Plan Preview
                     </span>
                     <span className="text-[11px] opacity-70">Review and adjust below</span>
                   </div>
