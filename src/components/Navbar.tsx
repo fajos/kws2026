@@ -57,7 +57,7 @@ export default function Navbar() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400/15 text-amber-300 border border-amber-400/40 hover:bg-amber-400/25 transition-all font-semibold"
             >
               <BookOpen className="w-3.5 h-3.5" />
-              <span>2026 Journal</span>
+              <span>E-Journal</span>
             </Link>
           </nav>
 
@@ -130,7 +130,7 @@ export default function Navbar() {
               className="flex items-center gap-2 text-amber-300 font-bold py-1"
             >
               <BookOpen className="w-4 h-4" />
-              <span>2026 Journal Web App</span>
+              <span>E-Journal Web App</span>
             </Link>
           </nav>
           <div className="pt-2">

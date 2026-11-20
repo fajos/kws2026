@@ -252,8 +252,14 @@ export default function JournalPage() {
   const [viewMode, setViewMode] = useState<"cards" | "wheel">("cards");
 
   // State & Multi-Year
-  const [journalState, setJournalState] = useState<JournalState>(() => createDefaultJournalState(2026));
-  const [availableYears, setAvailableYears] = useState<number[]>([2025, 2026, 2027, 2028]);
+  const defaultYear = new Date().getFullYear();
+  const [journalState, setJournalState] = useState<JournalState>(() => createDefaultJournalState(defaultYear));
+  const [availableYears, setAvailableYears] = useState<number[]>([
+    defaultYear - 1,
+    defaultYear,
+    defaultYear + 1,
+    defaultYear + 2,
+  ]);
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [customYearInput, setCustomYearInput] = useState("");
 
@@ -295,7 +301,7 @@ export default function JournalPage() {
     if (savedToken) {
       setToken(savedToken);
       fetchUserProfile(savedToken).finally(() => setAuthChecking(false));
-      fetchCloudJournal(savedToken, 2026);
+      fetchCloudJournal(savedToken, defaultYear);
     } else {
       setAuthChecking(false);
     }
@@ -2348,7 +2354,7 @@ export default function JournalPage() {
                       className="w-full py-3 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2 shadow-lg transition-all"
                     >
                       <Check className="w-4 h-4" />
-                      <span>Apply Breakdown to My 2026 Journal</span>
+                      <span>Apply Breakdown to My E-Journal</span>
                     </button>
                   </div>
                 </div>
