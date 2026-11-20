@@ -431,6 +431,7 @@ export default function JournalPage() {
     setUser(null);
     setToken("");
     localStorage.removeItem("kws_journal_token");
+    setJournalState(createDefaultJournalState(new Date().getFullYear()));
     setSyncStatus("offline");
     fetch("/api/journal/auth/login", { method: "DELETE" }).catch(() => {});
   }
