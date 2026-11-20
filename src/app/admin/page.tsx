@@ -661,7 +661,18 @@ export default function AdminPage() {
                             journalMembers.map((member) => (
                               <tr key={member.id} className="hover:bg-emerald-800/40 transition-colors">
                                 <td className="py-3.5 px-4">
-                                  <div className="font-bold text-white text-sm">{member.full_name}</div>
+                                  <div className="font-bold text-white text-sm flex items-center gap-1.5 flex-wrap">
+                                    <span>{member.full_name}</span>
+                                    {member.is_kws_attendee ? (
+                                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                                        ★ KWS Attendee
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-700/50 text-emerald-200 border border-emerald-600/50">
+                                        E-Journal User
+                                      </span>
+                                    )}
+                                  </div>
                                   <div className="text-emerald-300 text-xs font-mono">{member.email}</div>
                                   <div className="text-[10px] text-emerald-400 mt-0.5">
                                     Joined {new Date(member.created_at).toLocaleDateString()}

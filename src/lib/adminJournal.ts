@@ -23,6 +23,8 @@ export interface AdminJournalMember {
   reminder_frequency: string;
   reminder_day?: string;
   last_reminder_sent?: string;
+  is_kws_attendee?: boolean;
+  membership_tag?: string;
 }
 
 export interface JournalAdminStats {
@@ -49,10 +51,12 @@ export async function getAdminJournalMembers(
       e.data as entry_data,
       r.frequency as reminder_frequency,
       r.day_of_week as reminder_day,
-      r.last_sent_at as last_reminder_sent
+      r.last_sent_at as last_reminder_sent,
+      CASE WHEN reg.id IS NOT NULL THEN 1 ELSE 0 END as is_kws_attendee
     FROM journal_users u
     LEFT JOIN journal_entries e ON u.id = e.user_id AND e.year = ?
     LEFT JOIN journal_email_reminders r ON u.id = r.user_id
+    LEFT JOIN registrations reg ON LOWER(u.email) = LOWER(reg.email)
   `;
 
   const args: any[] = [year];
@@ -129,6 +133,8 @@ export async function getAdminJournalMembers(
       reminder_frequency: reminderFreq,
       reminder_day: row.reminder_day ? String(row.reminder_day) : undefined,
       last_reminder_sent: row.last_reminder_sent ? String(row.last_reminder_sent) : undefined,
+      is_kws_attendee: Boolean(row.is_kws_attendee),
+      membership_tag: row.is_kws_attendee ? "Kingdom Wealth Summit Member" : "E-Journal Member",
     });
   }
 

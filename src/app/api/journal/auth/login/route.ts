@@ -1,4 +1,4 @@
-import { getJournalUserByEmail } from "@/lib/db";
+import { getJournalUserByEmail, getRegistrationByEmail } from "@/lib/db";
 import { verifyPassword, generateToken } from "@/lib/auth";
 import { handleOptions, jsonResponse } from "@/lib/cors";
 
@@ -28,6 +28,11 @@ export async function POST(request: Request) {
 
     const token = generateToken(user.id, user.email, user.full_name);
 
+    // Verify if user is an attendee of Kingdom Wealth Summit
+    const registration = await getRegistrationByEmail(cleanEmail);
+    const isKwsMember = !!registration;
+    const membershipTag = isKwsMember ? "Kingdom Wealth Summit Member" : "E-Journal Member";
+
     const response = jsonResponse({
       success: true,
       token,
@@ -35,6 +40,8 @@ export async function POST(request: Request) {
         id: user.id,
         email: user.email,
         full_name: user.full_name,
+        is_kws_member: isKwsMember,
+        membership_tag: membershipTag,
       },
       message: "Logged in successfully",
     });

@@ -677,7 +677,7 @@ export default function JournalPage() {
                 <BookOpen className="w-7 h-7" />
               </div>
               <div className="text-[11px] font-extrabold uppercase tracking-widest text-amber-500 mb-1">
-                Kingdom Wealth Summit 2026
+                Reflective Life Planner • Finish Rich Africa
               </div>
               <h2 className="font-serif font-bold text-2xl sm:text-3xl tracking-tight">
                 Reflective E-Journal
@@ -792,7 +792,7 @@ export default function JournalPage() {
 
         {/* Footer */}
         <footer className="p-4 text-center text-xs opacity-50">
-          Kingdom Wealth Summit 2026 • Finish Rich Africa
+          Reflective E-Journal • Finish Rich Africa
         </footer>
       </div>
     );
