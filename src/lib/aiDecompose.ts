@@ -8,6 +8,27 @@ export type LifeArea =
   | "Community and impact"
   | "Rest and joy";
 
+export interface DecomposedWeek {
+  topPriorities: string[];
+  days: {
+    monday: string;
+    tuesday: string;
+    wednesday: string;
+    thursday: string;
+    friday: string;
+    saturday: string;
+    sunday: string;
+  };
+  carryForward: string;
+}
+
+export interface DecomposedMonth {
+  keyGoals: string[];
+  todos: string[];
+  notes: string;
+  weeks?: Record<number, DecomposedWeek>;
+}
+
 export interface DecomposedPlan {
   whyItMatters: string;
   supportNeeded: string;
@@ -23,28 +44,147 @@ export interface DecomposedPlan {
     3: { theme: string; month1: string[]; month2: string[]; month3: string[] };
     4: { theme: string; month1: string[]; month2: string[]; month3: string[] };
   };
-  monthPlans: Record<
-    number,
-    {
-      keyGoals: string[];
-      todos: string[];
-      notes: string;
-    }
-  >;
-  sampleWeek: {
-    topPriorities: string[];
-    days: {
-      monday: string;
-      tuesday: string;
-      wednesday: string;
-      thursday: string;
-      friday: string;
-      saturday: string;
-      sunday: string;
-    };
-    carryForward: string;
-  };
+  monthPlans: Record<number, DecomposedMonth>;
+  sampleWeek?: DecomposedWeek;
   source: "deepseek" | "openai" | "smart-engine";
+}
+
+export const MONTH_NAMES_FULL = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+/**
+ * Synthesizes actionable weekly schedules for all weeks (1 to 5) of any given month
+ * based on the month's specific goals, quarterly phase, and life area habits.
+ */
+export function generateWeeklyPlansForMonth(
+  cleanGoal: string,
+  monthIndex: number,
+  monthName: string,
+  quarterIndex: number,
+  keyGoals: string[],
+  todos: string[],
+  habits: string[],
+  initialSampleWeek?: DecomposedWeek
+): Record<number, DecomposedWeek> {
+  const weeks: Record<number, DecomposedWeek> = {};
+
+  const g0 = keyGoals[0] || `Advance ${cleanGoal}`;
+  const g1 = keyGoals[1] || `Maintain 80%+ consistency on daily keystone habit`;
+  const g2 = keyGoals[2] || `Deliver Quarter ${quarterIndex} milestone targets`;
+
+  const t0 = todos[0] || `Audit monthly baseline & establish weekly schedule`;
+  const t1 = todos[1] || `Execute primary tactical sprint`;
+  const t2 = todos[2] || `Prepare monthly reflection & retrospective`;
+
+  const h0 = habits[0] || "Review priorities & execute keystone habit";
+  const h1 = habits[1] || "Dedicated deep focus session";
+  const h2 = habits[2] || "Habit check & metric tracking";
+  const h3 = habits[3] || "Rest, active joy & weekly reflection";
+
+  for (let w = 1; w <= 5; w++) {
+    // If Month 1, Week 1 and sampleWeek was provided, preserve sampleWeek
+    if (monthIndex === 1 && w === 1 && initialSampleWeek) {
+      weeks[1] = initialSampleWeek;
+      continue;
+    }
+
+    if (w === 1) {
+      weeks[1] = {
+        topPriorities: [
+          `Kick off ${monthName} milestone: ${g0}`,
+          `Execute setup task: ${t0}`,
+          `Lock in keystone daily habit: ${h0}`,
+        ],
+        days: {
+          monday: `Kick off ${monthName}: establish intention for "${cleanGoal.substring(0, 36)}"`,
+          tuesday: `Focused session: ${h0} and foundational setup`,
+          wednesday: `Midweek calibration: ensure solid momentum on "${t0.substring(0, 35)}"`,
+          thursday: `Overcome friction: ${h1} with zero distractions`,
+          friday: `Wrap up Week 1 deliverables; evaluate initial output`,
+          saturday: `Active joy & restorative downtime: ${h3}`,
+          sunday: `Sunday Reset: review Week 1 wins, plan priorities for Week 2`,
+        },
+        carryForward: `Strong opening in ${monthName}. Early consistency builds compounding momentum.`,
+      };
+    } else if (w === 2) {
+      weeks[2] = {
+        topPriorities: [
+          `Core execution sprint: ${g1}`,
+          `Advance tactical deliverable: ${t1}`,
+          `Sustain high consistency on ${h1}`,
+        ],
+        days: {
+          monday: `Sprint kickoff: tackle top priority first for "${g1.substring(0, 35)}"`,
+          tuesday: `Deep execution block: dedicated to ${h1}`,
+          wednesday: `Mid-sprint check: review tracking metrics & KPIs`,
+          thursday: `High-impact action: push through "${t1.substring(0, 35)}"`,
+          friday: `Consolidate sprint deliverables; tidy workspace & review wins`,
+          saturday: `Personal enrichment, outdoor recreation, and creative downtime`,
+          sunday: `Weekly review: evaluate sprint velocity, outline Week 3 focus`,
+        },
+        carryForward: `Halfway through the month. Keep execution rhythm steady and focused.`,
+      };
+    } else if (w === 3) {
+      weeks[3] = {
+        topPriorities: [
+          `Target breakthrough on ${g2}`,
+          `Resolve primary bottleneck or friction point`,
+          `Mid-month calibration against Quarter ${quarterIndex} targets`,
+        ],
+        days: {
+          monday: `Mid-month recommitment: assess progress against monthly targets`,
+          tuesday: `High-leverage focus session: ${h2}`,
+          wednesday: `Accountability check: audit habit consistency and address friction`,
+          thursday: `Breakthrough sprint: push through resistance on challenging tasks`,
+          friday: `Consolidate Week 3 victories; document key insights and wins`,
+          saturday: `Rest, family connection, and physical/mental recharge`,
+          sunday: `Sunday review: prepare final push for Week 4 of ${monthName}`,
+        },
+        carryForward: `Plateaus yield to persistence. The closing sprint of ${monthName} is ahead.`,
+      };
+    } else if (w === 4) {
+      weeks[4] = {
+        topPriorities: [
+          `Finalize and deliver Month ${monthIndex} key goal: "${g0}"`,
+          `Complete final monthly review tasks: ${t2}`,
+          `Conduct Month in Review reflection & celebrate achievements`,
+        ],
+        days: {
+          monday: `Closing sprint kickoff: line up all remaining deliverables for ${monthName}`,
+          tuesday: `Deep closing block: finalize critical action items`,
+          wednesday: `Milestone verification: measure tangible results against Q${quarterIndex}`,
+          thursday: `Wrap up remaining todos and document key learnings`,
+          friday: `Monthly celebration: acknowledge progress, celebrate top win`,
+          saturday: `Celebration, gratitude, and unplugged restoration`,
+          sunday: `Complete Month in Review: record one win, one lesson, and grateful moments`,
+        },
+        carryForward: `Outstanding dedication in ${monthName}. Carry forward these habits and wins into next month.`,
+      };
+    } else {
+      // Week 5 (transition & bridge week)
+      weeks[5] = {
+        topPriorities: [
+          `Buffer sprint: clear any carry-forward or spillover action items`,
+          `Restorative maintenance: recharge physical and mental energy`,
+          `Preview next month's strategic roadmap and set calendar appointments`,
+        ],
+        days: {
+          monday: `Bridge day: organize notes and clear pending action items`,
+          tuesday: `Light maintenance: steady habit continuity without burnout`,
+          wednesday: `Reflect on cumulative monthly growth; celebrate resilience`,
+          thursday: `Preview upcoming month's roadmap, themes, and milestones`,
+          friday: `Set up workspace, calendar, and resources for next month`,
+          saturday: `Restorative leisure, connection, and peaceful recharge`,
+          sunday: `Transition reset: enter the new month with clarity and renewed purpose`,
+        },
+        carryForward: `Transitions are catalysts. Enter the new month with momentum and high spirits.`,
+      };
+    }
+  }
+
+  return weeks;
 }
 
 // --------------------------------------------------------------------------
@@ -197,28 +337,54 @@ function generateSmartHeuristicDecomposition(
 
   const t = areaTemplates[area] || areaTemplates["Personal growth"];
 
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
+  const sampleWeek: DecomposedWeek = {
+    topPriorities: [
+      `Prioritize primary action step for "${cleanGoal.substring(0, 40)}"`,
+      "Maintain daily tracking habit Monday through Sunday",
+      "Conduct Sunday evening weekly review and preview next week",
+    ],
+    days: {
+      monday: `Set intention & kick off week: ${t.habits[0] || "Review goals"}`,
+      tuesday: `Focused execution block: ${t.habits[1] || "Core practice"}`,
+      wednesday: `Midweek progress check: ${t.habits[2] || "Track metrics"}`,
+      thursday: `Overcome friction & stay consistent: ${t.habits[0] || "Deep session"}`,
+      friday: `Wrap up week deliverables & tidy workspace: ${t.habits[1] || "Review wins"}`,
+      saturday: `Active joy, recovery & lighter reflection: ${t.habits[3] || "Rest & reflect"}`,
+      sunday: `Sunday Reset: review past 7 days, plan upcoming week's top 3`,
+    },
+    carryForward: "Keep the momentum going. Consistency compounds exponentially over 52 weeks.",
+  };
 
-  const monthPlans: Record<number, { keyGoals: string[]; todos: string[]; notes: string }> = {};
+  const monthPlans: Record<number, DecomposedMonth> = {};
 
   for (let m = 1; m <= 12; m++) {
     const q = Math.ceil(m / 3);
-    const monthName = monthNames[m - 1];
+    const monthName = MONTH_NAMES_FULL[m - 1];
+    const keyGoals = [
+      `Achieve Month ${m} milestone toward "${cleanGoal.substring(0, 45)}"`,
+      `Maintain minimum 80% habit consistency throughout ${monthName}`,
+      `Complete targeted milestone for Quarter ${q}`,
+    ];
+    const todos = [
+      `Audit progress on the 1st of ${monthName}`,
+      `Execute key tactical sprint in week 2`,
+      `Prepare end-of-month self-assessment`,
+    ];
+    const weeks = generateWeeklyPlansForMonth(
+      cleanGoal,
+      m,
+      monthName,
+      q,
+      keyGoals,
+      todos,
+      t.habits,
+      m === 1 ? sampleWeek : undefined
+    );
     monthPlans[m] = {
-      keyGoals: [
-        `Achieve Month ${m} milestone toward "${cleanGoal.substring(0, 45)}"`,
-        `Maintain minimum 80% habit consistency throughout ${monthName}`,
-        `Complete targeted milestone for Quarter ${q}`,
-      ],
-      todos: [
-        `Audit progress on the 1st of ${monthName}`,
-        `Execute key tactical sprint in week 2`,
-        `Prepare end-of-month self-assessment`,
-      ],
+      keyGoals,
+      todos,
       notes: `Focus on Quarter ${q} milestone alignment. Steady execution beats sporadic intensity.`,
+      weeks,
     };
   }
 
@@ -258,23 +424,7 @@ function generateSmartHeuristicDecomposition(
       },
     },
     monthPlans,
-    sampleWeek: {
-      topPriorities: [
-        `Prioritize primary action step for "${cleanGoal.substring(0, 40)}"`,
-        "Maintain daily tracking habit Monday through Sunday",
-        "Conduct Sunday evening weekly review and preview next week",
-      ],
-      days: {
-        monday: `Set intention & kick off week: ${t.habits[0] || "Review goals"}`,
-        tuesday: `Focused execution block: ${t.habits[1] || "Core practice"}`,
-        wednesday: `Midweek progress check: ${t.habits[2] || "Track metrics"}`,
-        thursday: `Overcome friction & stay consistent: ${t.habits[0] || "Deep session"}`,
-        friday: `Wrap up week deliverables & tidy workspace: ${t.habits[1] || "Review wins"}`,
-        saturday: `Active joy, recovery & lighter reflection: ${t.habits[3] || "Rest & reflect"}`,
-        sunday: `Sunday Reset: review past 7 days, plan upcoming week's top 3`,
-      },
-      carryForward: "Keep the momentum going. Consistency compounds exponentially over 52 weeks.",
-    },
+    sampleWeek,
     source: "smart-engine",
   };
 }
@@ -287,6 +437,8 @@ export async function decomposeGoal(
   goalText: string,
   year: number = 2026
 ): Promise<DecomposedPlan> {
+  const cleanGoal = goalText.trim() || `Excel in ${area}`;
+
   // Read API keys strictly from background Vercel / server environment variables
   const deepseekKey = (process.env.DEEPSEEK_API_KEY || "").trim();
   const openaiKey = (process.env.OPENAI_API_KEY || "").trim();
@@ -337,7 +489,7 @@ Do NOT include monthly review fields; the user will reflect and fill those in pe
 
       const userPrompt = `Life Area: ${area}
 Year: ${year}
-Yearly Goal: "${goalText}"
+Yearly Goal: "${cleanGoal}"
 
 Please intelligently decompose this yearly goal into:
 1. Why it matters & Support/Resources needed
@@ -348,8 +500,49 @@ Please intelligently decompose this yearly goal into:
 
       const aiResult = await callLlmApi(userPrompt, systemPrompt, apiKey, resolvedProvider);
       if (aiResult && aiResult.milestones && aiResult.quarterPlans) {
+        // Area archetypes for fallback habits
+        const areaProfiles: Record<string, string[]> = {
+          "Personal growth": ["Read 20 pages", "Listen to educational podcast", "Document 3 insights in journal", "Reflect on weekly lesson"],
+          "Health and wellbeing": ["Drink 2.5L water", "45-min active workout or run", "Prep nutrient-rich lunch", "Lights out by 10:30 PM"],
+          "Spiritual life": ["15-min morning meditation & prayer", "Read daily scripture chapter", "Journal 3 blessings", "Evening gratitude check"],
+          "Career or business": ["Complete high-priority frog task first", "Send 3 outreach / networking emails", "Review daily metrics & KPIs", "Clean inbox and plan tomorrow"],
+          "Financial": ["Track every daily expense", "Review daily balance & budget limits", "Execute weekly savings sweep", "Zero impulsive unbudgeted purchases"],
+          "Family and relationships": ["Unplug phone during dinner", "Express genuine verbal appreciation", "Call or message a loved one", "Evening family check-in"],
+          "Community and impact": ["Perform 1 random act of kindness", "Engage with community group", "Share helpful knowledge or resources", "Support a local cause"],
+          "Rest and joy": ["1 hour of pure play or hobby", "Evening stroll without headphones", "Read uplifting fiction / art", "Celebrate today's win"],
+        };
+        const habits = areaProfiles[area] || areaProfiles["Personal growth"];
+
+        // Synthesize full 12-month weekly planners (Weeks 1 to 5 for every month)
+        const enrichedMonthPlans: Record<number, DecomposedMonth> = {};
+        for (let m = 1; m <= 12; m++) {
+          const mp = aiResult.monthPlans?.[m] || {};
+          const q = Math.ceil(m / 3);
+          const monthName = MONTH_NAMES_FULL[m - 1];
+          const keyGoals = mp.keyGoals || [`Achieve Month ${m} milestone toward "${cleanGoal.substring(0, 40)}"`];
+          const todos = mp.todos || [`Execute tactical steps for ${monthName}`];
+          const weeks = mp.weeks || generateWeeklyPlansForMonth(
+            cleanGoal,
+            m,
+            monthName,
+            q,
+            keyGoals,
+            todos,
+            habits,
+            m === 1 ? aiResult.sampleWeek : undefined
+          );
+          enrichedMonthPlans[m] = {
+            keyGoals,
+            todos,
+            notes: mp.notes || `Focus on Quarter ${q} milestone alignment. Steady execution beats sporadic intensity.`,
+            weeks,
+          };
+        }
+
         return {
           ...aiResult,
+          monthPlans: enrichedMonthPlans,
+          sampleWeek: aiResult.sampleWeek,
           source: resolvedProvider,
         };
       }
@@ -359,5 +552,5 @@ Please intelligently decompose this yearly goal into:
   }
 
   // Fallback to high-quality heuristic decomposition
-  return generateSmartHeuristicDecomposition(area, goalText, year);
+  return generateSmartHeuristicDecomposition(area, cleanGoal, year);
 }
