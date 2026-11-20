@@ -59,7 +59,7 @@ Vercel functions run in serverless environments. To ensure registered user data 
 | `JOURNAL_JWT_SECRET` | Secret key for signing user auth tokens | `a_secure_random_string` |
 | `RESEND_API_KEY` | Resend API Key for live email goal reminders | `re_...` |
 | `EMAIL_FROM` | Sender address using your verified custom domain | `E-Journal <journal@finishrichafrica.com>` |
-| `NEXT_PUBLIC_APP_URL` | App production base URL | `https://finishrichafrica.com` |
+| `NEXT_PUBLIC_APP_URL` | App production base URL | `https://kws2026.vercel.app` |
 
 *(If no AI key is provided, the journal uses its built-in smart domain heuristics engine to decompose goals instantly).*
 
