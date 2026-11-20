@@ -259,6 +259,22 @@ export async function getJournalUserById(id: number): Promise<JournalUser | unde
   return result.rows[0] as unknown as JournalUser;
 }
 
+export async function deleteJournalUserAccount(userId: number): Promise<void> {
+  await initDb();
+  await db.execute({
+    sql: "DELETE FROM journal_entries WHERE user_id = ?",
+    args: [userId],
+  });
+  await db.execute({
+    sql: "DELETE FROM journal_email_reminders WHERE user_id = ?",
+    args: [userId],
+  });
+  await db.execute({
+    sql: "DELETE FROM journal_users WHERE id = ?",
+    args: [userId],
+  });
+}
+
 export async function saveJournalEntry(userId: number, year: number, dataJson: string): Promise<void> {
   await initDb();
   await db.execute({

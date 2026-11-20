@@ -1,5 +1,5 @@
 import { getUserFromRequest } from "@/lib/auth";
-import { getJournalUserById, getRegistrationByEmail } from "@/lib/db";
+import { getJournalUserById, getRegistrationByEmail, deleteJournalUserAccount } from "@/lib/db";
 import { handleOptions, jsonResponse } from "@/lib/cors";
 
 export async function OPTIONS() {
@@ -34,6 +34,31 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Error in auth me route:", error);
+    return jsonResponse({ error: "Internal server error" }, 500);
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const auth = getUserFromRequest(request);
+    if (!auth) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
+    const user = await getJournalUserById(auth.userId);
+    if (!user) {
+      return jsonResponse({ error: "User not found" }, 404);
+    }
+
+    await deleteJournalUserAccount(auth.userId);
+    const response = jsonResponse({
+      success: true,
+      message: "Account and all associated data deleted successfully.",
+    });
+    response.cookies.delete("journal_token");
+    return response;
+  } catch (error) {
+    console.error("Error in DELETE auth me route:", error);
     return jsonResponse({ error: "Internal server error" }, 500);
   }
 }

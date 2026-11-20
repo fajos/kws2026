@@ -33,12 +33,15 @@ import {
   ArrowRight,
   SunMoon,
   BookOpen,
+  Target,
+  AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
 
 // -------------------------------------------------------------
 // Types & Constants
 // -------------------------------------------------------------
-export type LifeArea =
+export type PredefinedLifeArea =
   | "Personal growth"
   | "Health and wellbeing"
   | "Spiritual life"
@@ -48,7 +51,17 @@ export type LifeArea =
   | "Community and impact"
   | "Rest and joy";
 
-export const LIFE_AREAS: { key: LifeArea; label: string; icon: any; defaultPlaceholder: string }[] = [
+export type LifeArea = PredefinedLifeArea | (string & {});
+
+export interface LifeAreaMeta {
+  key: LifeArea;
+  label: string;
+  icon: any;
+  defaultPlaceholder: string;
+  isCustom?: boolean;
+}
+
+export const LIFE_AREAS: LifeAreaMeta[] = [
   {
     key: "Personal growth",
     label: "Personal growth",
@@ -97,6 +110,17 @@ export const LIFE_AREAS: { key: LifeArea; label: string; icon: any; defaultPlace
     icon: Palmtree,
     defaultPlaceholder: "e.g. Unplugged Sundays, annual summer cottage trip, pottery workshop",
   },
+];
+
+export const SUGGESTED_CUSTOM_GOALS = [
+  { name: "Creative Project", placeholder: "e.g. Write a book, record podcast, learn oil painting" },
+  { name: "Ministry & Outreach", placeholder: "e.g. Lead small group, volunteer at soup kitchen, missions trip" },
+  { name: "Home & Sanctuary", placeholder: "e.g. Renovate kitchen, organize garage, landscape garden" },
+  { name: "Travel & Adventure", placeholder: "e.g. Visit 3 new countries, annual family road trip, hike Rockies" },
+  { name: "Education & Degree", placeholder: "e.g. Complete certification, learn fluent Spanish, read 20 whitepapers" },
+  { name: "Investing & Real Estate", placeholder: "e.g. Acquire rental property, index fund DCA, crypto safety" },
+  { name: "Parenting & Legacy", placeholder: "e.g. 1-on-1 monthly child dates, build trust fund, family tree" },
+  { name: "Physical Fitness", placeholder: "e.g. Run half-marathon, 100 pushups daily, hit 15% body fat" },
 ];
 
 export interface CheckItem {
@@ -166,12 +190,61 @@ export interface GoalEntry {
   supportNeeded: string;
   quarterPlans: Record<1 | 2 | 3 | 4, QuarterPlan>;
   monthPlans: Record<number, MonthPlan>;
+  isCustom?: boolean;
 }
 
 export interface JournalState {
   year: number;
-  goals: Record<LifeArea, GoalEntry>;
-  yearsData?: Record<number, Record<LifeArea, GoalEntry>>;
+  goals: Record<string, GoalEntry>;
+  customAreas?: string[];
+  yearsData?: Record<number, Record<string, GoalEntry>>;
+}
+
+export function getActiveGoalAreas(state: JournalState): LifeAreaMeta[] {
+  const result: LifeAreaMeta[] = [];
+  const knownKeys = new Set<string>();
+
+  // Include predefined areas that are not deleted from state.goals
+  for (const item of LIFE_AREAS) {
+    if (state.goals && state.goals[item.key] !== undefined) {
+      result.push(item);
+      knownKeys.add(item.key);
+    }
+  }
+
+  // Include custom areas
+  if (state.customAreas && Array.isArray(state.customAreas)) {
+    for (const ca of state.customAreas) {
+      if (ca && !knownKeys.has(ca) && state.goals && state.goals[ca] !== undefined) {
+        result.push({
+          key: ca,
+          label: ca,
+          icon: Target,
+          defaultPlaceholder: `e.g. Set specific, measurable milestones for ${ca}`,
+          isCustom: true,
+        });
+        knownKeys.add(ca);
+      }
+    }
+  }
+
+  // Any other keys present in state.goals
+  if (state.goals) {
+    for (const [k, v] of Object.entries(state.goals)) {
+      if (k && !knownKeys.has(k) && v) {
+        result.push({
+          key: k,
+          label: k,
+          icon: Target,
+          defaultPlaceholder: `e.g. Set specific, measurable milestones for ${k}`,
+          isCustom: true,
+        });
+        knownKeys.add(k);
+      }
+    }
+  }
+
+  return result;
 }
 
 const MONTH_NAMES = [
@@ -179,7 +252,7 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December"
 ];
 
-function createDefaultGoalEntry(area: LifeArea): GoalEntry {
+function createDefaultGoalEntry(area: LifeArea, isCustom: boolean = false): GoalEntry {
   const quarterPlans: Record<1 | 2 | 3 | 4, QuarterPlan> = {
     1: { quarter: 1, theme: "", month1: [], month2: [], month3: [] },
     2: { quarter: 2, theme: "", month1: [], month2: [], month3: [] },
@@ -224,17 +297,19 @@ function createDefaultGoalEntry(area: LifeArea): GoalEntry {
     supportNeeded: "",
     quarterPlans,
     monthPlans,
+    isCustom,
   };
 }
 
 function createDefaultJournalState(year: number): JournalState {
-  const goals: Record<LifeArea, GoalEntry> = {} as any;
+  const goals: Record<string, GoalEntry> = {};
   LIFE_AREAS.forEach((item) => {
     goals[item.key] = createDefaultGoalEntry(item.key);
   });
   return {
     year,
     goals,
+    customAreas: [],
     yearsData: { [year]: goals },
   };
 }
@@ -264,7 +339,7 @@ export default function JournalPage() {
   const [customYearInput, setCustomYearInput] = useState("");
 
   // Auth & Cloud Sync
-  const [user, setUser] = useState<{ id: number; email: string; full_name: string } | null>(null);
+  const [user, setUser] = useState<{ id: number; email: string; full_name: string; is_summit_attendee?: boolean } | null>(null);
   const [token, setToken] = useState<string>("");
   const [authChecking, setAuthChecking] = useState(true);
   const [syncStatus, setSyncStatus] = useState<"synced" | "saving" | "offline">("offline");
@@ -291,6 +366,19 @@ export default function JournalPage() {
   const [aiGoalText, setAiGoalText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [decomposedPreview, setDecomposedPreview] = useState<any | null>(null);
+
+  // Custom Goals Modal & Delete Confirmation
+  const [showAddGoalModal, setShowAddGoalModal] = useState(false);
+  const [newGoalName, setNewGoalName] = useState("");
+  const [newGoalText, setNewGoalText] = useState("");
+  const [newGoalPriority, setNewGoalPriority] = useState<1 | 2 | 3>(2);
+  const [addGoalError, setAddGoalError] = useState("");
+  const [goalToDelete, setGoalToDelete] = useState<LifeArea | null>(null);
+
+  // Account Deletion Modal
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState("");
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -431,9 +519,118 @@ export default function JournalPage() {
     setUser(null);
     setToken("");
     localStorage.removeItem("kws_journal_token");
+    localStorage.removeItem("kws_journal_local_state");
     setJournalState(createDefaultJournalState(new Date().getFullYear()));
     setSyncStatus("offline");
     fetch("/api/journal/auth/login", { method: "DELETE" }).catch(() => {});
+  }
+
+  // Custom Goals Logic
+  function handleAddCustomGoal() {
+    const trimmedName = newGoalName.trim();
+    if (!trimmedName) {
+      setAddGoalError("Please enter a goal name or title.");
+      return;
+    }
+
+    const currentAreas = getActiveGoalAreas(journalState);
+    if (currentAreas.some((a) => a.key.toLowerCase() === trimmedName.toLowerCase())) {
+      setAddGoalError("A goal with this name already exists.");
+      return;
+    }
+
+    const newEntry = createDefaultGoalEntry(trimmedName, true);
+    newEntry.text = newGoalText.trim();
+    newEntry.priority = newGoalPriority;
+
+    const nextCustomAreas = Array.from(new Set([...(journalState.customAreas || []), trimmedName]));
+    const nextGoals = {
+      ...journalState.goals,
+      [trimmedName]: newEntry,
+    };
+    const yearsData = journalState.yearsData || {};
+    const nextYearsData = {
+      ...yearsData,
+      [journalState.year]: nextGoals,
+    };
+
+    const nextState: JournalState = {
+      ...journalState,
+      goals: nextGoals,
+      customAreas: nextCustomAreas,
+      yearsData: nextYearsData,
+    };
+
+    triggerSave(nextState);
+    setSelectedArea(trimmedName);
+    setNewGoalName("");
+    setNewGoalText("");
+    setNewGoalPriority(2);
+    setAddGoalError("");
+    setShowAddGoalModal(false);
+  }
+
+  function handleConfirmDeleteGoal() {
+    if (!goalToDelete) return;
+
+    const nextGoals = { ...journalState.goals };
+    delete nextGoals[goalToDelete];
+
+    const nextCustomAreas = (journalState.customAreas || []).filter((c) => c !== goalToDelete);
+    const yearsData = journalState.yearsData || {};
+    const nextYearGoals = { ...(yearsData[journalState.year] || {}) };
+    delete nextYearGoals[goalToDelete];
+
+    const nextYearsData = {
+      ...yearsData,
+      [journalState.year]: nextYearGoals,
+    };
+
+    const nextState: JournalState = {
+      ...journalState,
+      goals: nextGoals,
+      customAreas: nextCustomAreas,
+      yearsData: nextYearsData,
+    };
+
+    const remainingAreas = getActiveGoalAreas(nextState);
+    if (selectedArea === goalToDelete) {
+      setSelectedArea(remainingAreas[0]?.key || "Personal growth");
+    }
+
+    triggerSave(nextState);
+    setGoalToDelete(null);
+  }
+
+  async function handleDeleteAccount() {
+    if (!token) return;
+    setDeleteAccountLoading(true);
+    setDeleteAccountError("");
+
+    try {
+      const res = await fetch("/api/journal/auth/delete-account", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setDeleteAccountError(data.error || "Failed to delete account. Please try again.");
+        setDeleteAccountLoading(false);
+        return;
+      }
+
+      setUser(null);
+      setToken("");
+      localStorage.removeItem("kws_journal_token");
+      localStorage.removeItem("kws_journal_local_state");
+      setJournalState(createDefaultJournalState(new Date().getFullYear()));
+      setSyncStatus("offline");
+      setShowDeleteAccountModal(false);
+      setDeleteAccountLoading(false);
+    } catch {
+      setDeleteAccountError("Network error. Could not delete account.");
+      setDeleteAccountLoading(false);
+    }
   }
 
   // AI Decomposition
@@ -604,12 +801,18 @@ export default function JournalPage() {
       LIFE_AREAS.forEach((item) => {
         targetGoals[item.key] = createDefaultGoalEntry(item.key);
       });
+      if (journalState.customAreas) {
+        journalState.customAreas.forEach((ca) => {
+          targetGoals[ca] = createDefaultGoalEntry(ca, true);
+        });
+      }
       newYearsData[yr] = targetGoals;
     }
 
     const nextState: JournalState = {
       year: yr,
       goals: targetGoals,
+      customAreas: journalState.customAreas || [],
       yearsData: newYearsData,
     };
 
@@ -628,10 +831,17 @@ export default function JournalPage() {
   const primaryBg = isDark ? "bg-[#E5B8C2] text-[#121216]" : "bg-[#7A283C] text-white";
   const pillLight = isDark ? "bg-[#2B1C22] text-[#E5B8C2] border-[#44232C]" : "bg-[#FAF4EB] text-[#7A283C] border-[#F0E4D8]";
 
-  const currentGoal = journalState.goals[selectedArea] || createDefaultGoalEntry(selectedArea);
+  const activeAreas = getActiveGoalAreas(journalState);
+  const currentGoal = journalState.goals[selectedArea] || (activeAreas[0] ? journalState.goals[activeAreas[0].key] : null) || createDefaultGoalEntry(selectedArea);
   const currentMonthPlan = currentGoal.monthPlans[selectedMonth] || currentGoal.monthPlans[1];
   const currentWeekPlan = currentMonthPlan.weeks[selectedWeek] || currentMonthPlan.weeks[1];
   const currentQuarterPlan = currentGoal.quarterPlans[selectedQuarter] || currentGoal.quarterPlans[1];
+
+  useEffect(() => {
+    if (activeAreas.length > 0 && !journalState.goals[selectedArea]) {
+      setSelectedArea(activeAreas[0].key);
+    }
+  }, [journalState.goals, selectedArea]);
 
   const topThreeCount = Object.values(journalState.goals).filter((g) => g.isTopThree).length;
 
@@ -863,14 +1073,37 @@ export default function JournalPage() {
                   <span className={`w-1.5 h-1.5 rounded-full ${syncStatus === "synced" ? "bg-emerald-500" : "bg-amber-500 animate-ping"}`} />
                   <span>{syncStatus === "synced" ? "Cloud Synced" : "Saving..."}</span>
                 </div>
+
+                {/* Membership Badge */}
+                <div
+                  className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                    user.is_summit_attendee
+                      ? "bg-amber-400/15 border-amber-400/40 text-amber-500"
+                      : "bg-slate-500/10 border-slate-500/20 text-slate-400"
+                  }`}
+                >
+                  <span>★</span>
+                  <span>{user.is_summit_attendee ? "KWS Member" : "E-Journal User"}</span>
+                </div>
+
                 <div className="flex items-center gap-1.5 text-xs font-medium">
-                  <span className="hidden sm:inline font-semibold">{user.full_name}</span>
+                  <span className="hidden md:inline font-semibold">{user.full_name}</span>
                   <button
                     onClick={handleLogout}
-                    className="p-1.5 rounded-full hover:bg-red-500/15 text-red-500 transition-colors"
+                    className="p-1.5 rounded-full hover:bg-slate-500/15 opacity-70 hover:opacity-100 transition-colors"
                     title="Log Out"
                   >
                     <LogOut className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDeleteAccountError("");
+                      setShowDeleteAccountModal(true);
+                    }}
+                    className="p-1.5 rounded-full hover:bg-red-500/15 text-red-500 transition-colors"
+                    title="Delete Account & Wipe Cloud Data"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -927,18 +1160,32 @@ export default function JournalPage() {
             {/* Life Area Quick Dropdown for sub-views */}
             {activeTab !== "year" && (
               <div className="flex items-center gap-2 pl-3 border-l border-slate-300 dark:border-slate-700">
-                <span className="text-xs opacity-60 hidden md:inline">Life Area:</span>
+                <span className="text-xs opacity-60 hidden md:inline">Goal:</span>
                 <select
                   value={selectedArea}
                   onChange={(e) => setSelectedArea(e.target.value as LifeArea)}
                   className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border outline-none ${cardBg}`}
                 >
-                  {LIFE_AREAS.map((a) => (
+                  {activeAreas.map((a) => (
                     <option key={a.key} value={a.key}>
                       {a.label}
                     </option>
                   ))}
                 </select>
+                <button
+                  onClick={() => {
+                    setNewGoalName("");
+                    setNewGoalText("");
+                    setNewGoalPriority(2);
+                    setAddGoalError("");
+                    setShowAddGoalModal(true);
+                  }}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${pillLight} hover:scale-105`}
+                  title="Add Custom Goal"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Add</span>
+                </button>
               </div>
             )}
           </div>
@@ -959,14 +1206,28 @@ export default function JournalPage() {
               <div>
                 <h2 className="font-serif font-bold text-2xl tracking-tight">My goals for the year</h2>
                 <p className="text-xs sm:text-sm opacity-70 mt-0.5">
-                  Circle your top three priorities for {journalState.year}. Each life area cascades into quarterly, monthly, and weekly plans.
+                  Set, customize, and prioritize your annual goals. Each area cascades into quarterly roadmaps, monthly reviews, and weekly plans.
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <button
+                  onClick={() => {
+                    setNewGoalName("");
+                    setNewGoalText("");
+                    setNewGoalPriority(2);
+                    setAddGoalError("");
+                    setShowAddGoalModal(true);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all hover:scale-105 shadow-sm ${primaryBg}`}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Custom Goal</span>
+                </button>
+
                 <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold ${pillLight}`}>
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Top 3 Selected: {topThreeCount}/3</span>
+                  <span>Top 3: {topThreeCount}/3</span>
                 </div>
 
                 {/* View Mode Toggle: Cards vs Life Wheel */}
@@ -993,10 +1254,10 @@ export default function JournalPage() {
               </div>
             </div>
 
-            {/* Render 8 Life Area Cards */}
+            {/* Render Life Area Cards */}
             {viewMode === "cards" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {LIFE_AREAS.map((item) => {
+                {activeAreas.map((item) => {
                   const goal = journalState.goals[item.key] || createDefaultGoalEntry(item.key);
                   const Icon = item.icon;
 
@@ -1014,33 +1275,51 @@ export default function JournalPage() {
                             <div className={`p-2 rounded-xl border ${pillLight}`}>
                               <Icon className="w-5 h-5" />
                             </div>
-                            <span className="font-serif font-bold text-base sm:text-lg">{item.label}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-serif font-bold text-base sm:text-lg">{item.label}</span>
+                              {item.isCustom && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-500">
+                                  Custom
+                                </span>
+                              )}
+                            </div>
                           </div>
 
-                          {/* Priority Star / Top 3 Toggle */}
-                          <button
-                            onClick={() => {
-                              const updatedGoal: GoalEntry = {
-                                ...goal,
-                                isTopThree: !goal.isTopThree,
-                              };
-                              triggerSave({
-                                ...journalState,
-                                goals: {
-                                  ...journalState.goals,
-                                  [item.key]: updatedGoal,
-                                },
-                              });
-                            }}
-                            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border transition-transform active:scale-95 ${
-                              goal.isTopThree
-                                ? "bg-amber-400/20 text-amber-500 border-amber-400/50"
-                                : "opacity-50 hover:opacity-100"
-                            }`}
-                          >
-                            <span>★</span>
-                            <span>{goal.isTopThree ? "Top 3 Priority" : "Make Top 3"}</span>
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            {/* Priority Star / Top 3 Toggle */}
+                            <button
+                              onClick={() => {
+                                const updatedGoal: GoalEntry = {
+                                  ...goal,
+                                  isTopThree: !goal.isTopThree,
+                                };
+                                triggerSave({
+                                  ...journalState,
+                                  goals: {
+                                    ...journalState.goals,
+                                    [item.key]: updatedGoal,
+                                  },
+                                });
+                              }}
+                              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border transition-transform active:scale-95 ${
+                                goal.isTopThree
+                                  ? "bg-amber-400/20 text-amber-500 border-amber-400/50"
+                                  : "opacity-50 hover:opacity-100"
+                              }`}
+                            >
+                              <span>★</span>
+                              <span className="hidden sm:inline">{goal.isTopThree ? "Top 3 Priority" : "Make Top 3"}</span>
+                            </button>
+
+                            {/* Delete Goal Button */}
+                            <button
+                              onClick={() => setGoalToDelete(item.key)}
+                              className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
+                              title={`Delete ${item.label} goal and all cascading plans`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
 
                         {/* Goal Input Area */}
@@ -1156,10 +1435,10 @@ export default function JournalPage() {
               <div className={`p-8 rounded-2xl border text-center ${cardBg}`}>
                 <h3 className="font-serif font-bold text-xl mb-2">Life Balance Wheel</h3>
                 <p className="text-xs sm:text-sm opacity-70 max-w-lg mx-auto mb-6">
-                  Review the balance across your 8 life areas. Tap any life area to focus and edit its breakdown.
+                  Review the balance across your active life areas. Tap any life area to focus and edit its breakdown.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mx-auto">
-                  {LIFE_AREAS.map((item) => {
+                  {activeAreas.map((item) => {
                     const g = journalState.goals[item.key];
                     const hasGoal = Boolean(g && g.text.trim());
                     return (
@@ -1197,17 +1476,27 @@ export default function JournalPage() {
                   <span className="text-xs font-bold uppercase tracking-wider opacity-60">Goal Breakdown</span>
                   <h2 className="font-serif font-bold text-2xl">{selectedArea}</h2>
                 </div>
-                <button
-                  onClick={() => {
-                    setAiTargetArea(selectedArea);
-                    setAiGoalText(currentGoal.text);
-                    setShowAiModal(true);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-500 bg-amber-400/10 border border-amber-400/30 hover:bg-amber-400/20"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>✨ Auto-Decompose with AI</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setAiTargetArea(selectedArea);
+                      setAiGoalText(currentGoal.text);
+                      setShowAiModal(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-500 bg-amber-400/10 border border-amber-400/30 hover:bg-amber-400/20"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>✨ Auto-Decompose with AI</span>
+                  </button>
+                  <button
+                    onClick={() => setGoalToDelete(selectedArea)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-colors"
+                    title={`Delete ${selectedArea} goal and all cascading plans`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Goal</span>
+                  </button>
+                </div>
               </div>
 
               {/* Goal Statement */}
@@ -2360,6 +2649,241 @@ export default function JournalPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL: ADD CUSTOM GOAL                                        */}
+      {/* ------------------------------------------------------------- */}
+      {showAddGoalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade">
+          <div className={`w-full max-w-lg p-6 rounded-2xl border shadow-2xl ${cardBg}`}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-amber-500" />
+                <h3 className="font-serif font-bold text-lg">Add Custom Goal</h3>
+              </div>
+              <button onClick={() => setShowAddGoalModal(false)} className="p-1 opacity-60 hover:opacity-100">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-4">
+              {addGoalError && (
+                <div className="p-3 rounded-lg text-xs font-semibold bg-red-500/15 border border-red-500/40 text-red-500">
+                  {addGoalError}
+                </div>
+              )}
+
+              {/* Goal Title / Area Name */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-70">
+                  Goal / Life Area Name
+                </label>
+                <input
+                  type="text"
+                  value={newGoalName}
+                  onChange={(e) => {
+                    setNewGoalName(e.target.value);
+                    if (addGoalError) setAddGoalError("");
+                  }}
+                  placeholder="e.g. Creative Project, Parenting, Real Estate"
+                  className={`w-full p-2.5 rounded-xl border text-sm outline-none ${
+                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                  }`}
+                />
+              </div>
+
+              {/* Quick Template Suggestions */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 opacity-60">
+                  Popular Suggestions:
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {SUGGESTED_CUSTOM_GOALS.map((s) => (
+                    <button
+                      key={s.name}
+                      type="button"
+                      onClick={() => {
+                        setNewGoalName(s.name);
+                        if (!newGoalText) setNewGoalText(s.placeholder);
+                        if (addGoalError) setAddGoalError("");
+                      }}
+                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all ${
+                        newGoalName === s.name ? primaryBg : pillLight
+                      }`}
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Initial Statement */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-70">
+                  Annual Goal Statement
+                </label>
+                <textarea
+                  rows={2}
+                  value={newGoalText}
+                  onChange={(e) => setNewGoalText(e.target.value)}
+                  placeholder="What is your primary milestone or outcome for this year?"
+                  className={`w-full p-2.5 rounded-xl border text-sm outline-none font-sans resize-none ${
+                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                  }`}
+                />
+              </div>
+
+              {/* Priority */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-70">
+                  Initial Priority
+                </label>
+                <div className="flex items-center gap-2">
+                  {[
+                    { p: 1, label: "1 - High Priority" },
+                    { p: 2, label: "2 - Medium Focus" },
+                    { p: 3, label: "3 - Standard" },
+                  ].map((item) => (
+                    <button
+                      key={item.p}
+                      type="button"
+                      onClick={() => setNewGoalPriority(item.p as any)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
+                        newGoalPriority === item.p ? primaryBg : pillLight
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddGoalModal(false)}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold border ${pillLight}`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddCustomGoal}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all ${primaryBg}`}
+                >
+                  Create Goal &amp; Roadmap
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL: DELETE GOAL CONFIRMATION                               */}
+      {/* ------------------------------------------------------------- */}
+      {goalToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade">
+          <div className={`w-full max-w-md p-6 rounded-2xl border shadow-2xl ${cardBg}`}>
+            <div className="flex items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800 text-red-500">
+              <AlertTriangle className="w-5 h-5" />
+              <h3 className="font-serif font-bold text-lg">Delete Goal &amp; All Plans?</h3>
+            </div>
+
+            <div className="py-4 space-y-3">
+              <p className="text-sm opacity-90 leading-relaxed">
+                Are you sure you want to delete <strong className="text-red-500">"{goalToDelete}"</strong>?
+              </p>
+              <div className="p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-xs text-red-400 space-y-1">
+                <div className="font-bold">⚠️ Cascading Deletion Warning:</div>
+                <p>
+                  This action will permanently remove this goal along with its 4 quarterly roadmaps, 12 monthly reviews, and all weekly/daily action items.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setGoalToDelete(null)}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-bold border ${pillLight}`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteGoal}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-md transition-all flex items-center justify-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Goal Forever</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL: PERMANENT ACCOUNT DELETION                             */}
+      {/* ------------------------------------------------------------- */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade">
+          <div className={`w-full max-w-md p-6 rounded-2xl border shadow-2xl ${cardBg}`}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 text-red-500">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-5 h-5" />
+                <h3 className="font-serif font-bold text-lg">Delete Account &amp; All Data?</h3>
+              </div>
+              <button onClick={() => setShowDeleteAccountModal(false)} className="p-1 opacity-60 hover:opacity-100">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-3">
+              {deleteAccountError && (
+                <div className="p-3 rounded-lg text-xs font-semibold bg-red-500/15 border border-red-500/40 text-red-500">
+                  {deleteAccountError}
+                </div>
+              )}
+
+              <p className="text-sm opacity-90 leading-relaxed">
+                This will permanently delete your account (<strong>{user?.email}</strong>) and erase:
+              </p>
+
+              <ul className="text-xs space-y-1.5 opacity-80 list-disc list-inside">
+                <li>Your user profile and credentials</li>
+                <li>All annual goals and 4-quarter milestones</li>
+                <li>All 12 monthly reviews and reflection logs</li>
+                <li>All weekly planners and daily action checklists</li>
+                <li>All automated email reminder preferences</li>
+              </ul>
+
+              <div className="p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-xs text-red-400 font-semibold">
+                ⚠️ This action cannot be undone. All cloud data will be immediately and irreversibly purged from our servers.
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                disabled={deleteAccountLoading}
+                onClick={() => setShowDeleteAccountModal(false)}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-bold border ${pillLight}`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteAccountLoading}
+                onClick={handleDeleteAccount}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-md transition-all flex items-center justify-center gap-1.5"
+              >
+                {deleteAccountLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                <span>Delete Account Forever</span>
+              </button>
             </div>
           </div>
         </div>
