@@ -54,8 +54,13 @@ Vercel functions run in serverless environments. To ensure registered user data 
 |---|---|---|
 | `TURSO_DATABASE_URL` | Turso Database Connection URL | `libsql://kws2026-db-username.turso.io` |
 | `TURSO_AUTH_TOKEN` | Turso Auth Token | `eyJhbGciOi...` |
+| `DEEPSEEK_API_KEY` | DeepSeek API Key (Background AI Decomposition) | `sk-...` |
+| `OPENAI_API_KEY` | OpenAI API Key (Alternative AI Provider) | `sk-proj-...` |
+| `JOURNAL_JWT_SECRET` | Secret key for signing user auth tokens | `a_secure_random_string` |
+| `RESEND_API_KEY` | (Optional) Resend API Key for live email goal reminders | `re_...` |
+| `NEXT_PUBLIC_APP_URL` | App production base URL | `https://kws2026.vercel.app` |
 
-*(If no environment variables are provided, the app will safely run in fallback mode on Vercel).*
+*(If no AI key is provided, the journal uses its built-in smart domain heuristics engine to decompose goals instantly).*
 
 ---
 
@@ -63,4 +68,5 @@ Vercel functions run in serverless environments. To ensure registered user data 
 
 - **Landing Page:** `https://your-domain.vercel.app/`
 - **Registration Form:** `https://your-domain.vercel.app/register`
+- **Reflective E-Journal Web App:** `https://your-domain.vercel.app/journal`
 - **Admin Dashboard & CSV Export:** `https://your-domain.vercel.app/admin`

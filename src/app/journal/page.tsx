@@ -281,8 +281,6 @@ export default function JournalPage() {
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiTargetArea, setAiTargetArea] = useState<LifeArea>("Health and wellbeing");
   const [aiGoalText, setAiGoalText] = useState("");
-  const [aiProvider, setAiProvider] = useState<"smart-engine" | "deepseek" | "openai">("smart-engine");
-  const [aiApiKey, setAiApiKey] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [decomposedPreview, setDecomposedPreview] = useState<any | null>(null);
 
@@ -291,8 +289,6 @@ export default function JournalPage() {
   // 1. Initial Load: Check token & load journal
   useEffect(() => {
     const savedToken = localStorage.getItem("kws_journal_token") || "";
-    const savedApiKey = localStorage.getItem("kws_journal_ai_key") || "";
-    if (savedApiKey) setAiApiKey(savedApiKey);
 
     if (savedToken) {
       setToken(savedToken);
@@ -437,9 +433,6 @@ export default function JournalPage() {
   async function handleRunDecomposition() {
     setAiLoading(true);
     setDecomposedPreview(null);
-    if (aiApiKey) {
-      localStorage.setItem("kws_journal_ai_key", aiApiKey);
-    }
 
     try {
       const res = await fetch("/api/journal/ai-decompose", {
@@ -449,8 +442,6 @@ export default function JournalPage() {
           area: aiTargetArea,
           goalText: aiGoalText,
           year: journalState.year,
-          customApiKey: aiApiKey,
-          provider: aiProvider === "smart-engine" ? undefined : aiProvider,
         }),
       });
 
@@ -2122,48 +2113,19 @@ export default function JournalPage() {
                 />
               </div>
 
-              {/* AI Engine & API Key Selection */}
-              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <label className="text-xs font-bold uppercase tracking-wider opacity-70">
-                    Decomposition Engine
-                  </label>
-                  <div className="flex items-center gap-1">
-                    {[
-                      { id: "smart-engine", label: "Smart Engine (Instant)" },
-                      { id: "deepseek", label: "DeepSeek AI" },
-                      { id: "openai", label: "OpenAI" },
-                    ].map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => setAiProvider(p.id as any)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                          aiProvider === p.id ? primaryBg : pillLight
-                        }`}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
+              {/* AI Engine Status Badge */}
+              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold text-amber-500">
+                    ⚡ Automated Cascading Decomposition
+                  </div>
+                  <div className="text-[11px] opacity-70">
+                    Intelligently decomposes yearly goals into 4 quarters, 12 months &amp; 7-day habits.
                   </div>
                 </div>
-
-                {aiProvider !== "smart-engine" && (
-                  <div>
-                    <input
-                      type="password"
-                      value={aiApiKey}
-                      onChange={(e) => setAiApiKey(e.target.value)}
-                      placeholder={`Enter ${aiProvider === "deepseek" ? "DeepSeek" : "OpenAI"} API Key (or leave blank to use server environment key)...`}
-                      className={`w-full p-2 rounded-lg border text-xs outline-none ${
-                        isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
-                      }`}
-                    />
-                    <p className="text-[10px] opacity-60 mt-1">
-                      Your key is securely saved in your browser and used only to decompose goals.
-                    </p>
-                  </div>
-                )}
+                <div className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-400/20 text-amber-500 border border-amber-400/30">
+                  AI Ready
+                </div>
               </div>
 
               {/* Generate Button */}

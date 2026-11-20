@@ -8,7 +8,7 @@ export async function OPTIONS() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { area, goalText, year, customApiKey, provider } = body;
+    const { area, goalText, year } = body;
 
     if (!area || !goalText || !goalText.trim()) {
       return jsonResponse(
@@ -20,9 +20,7 @@ export async function POST(request: Request) {
     const decomposed = await decomposeGoal(
       area as LifeArea,
       goalText.trim(),
-      year ? parseInt(year, 10) : 2026,
-      customApiKey,
-      provider
+      year ? parseInt(year, 10) : 2026
     );
 
     return jsonResponse({

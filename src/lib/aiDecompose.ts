@@ -280,23 +280,19 @@ function generateSmartHeuristicDecomposition(
 }
 
 // --------------------------------------------------------------------------
-// Master Decomposition Dispatcher
+// Master Decomposition Dispatcher (Environment Variable Driven)
 // --------------------------------------------------------------------------
 export async function decomposeGoal(
   area: LifeArea,
   goalText: string,
-  year: number = 2026,
-  customApiKey?: string,
-  provider?: "deepseek" | "openai"
+  year: number = 2026
 ): Promise<DecomposedPlan> {
-  const apiKey =
-    customApiKey?.trim() ||
-    process.env.DEEPSEEK_API_KEY ||
-    process.env.OPENAI_API_KEY ||
-    "";
+  // Read API keys strictly from background Vercel / server environment variables
+  const deepseekKey = (process.env.DEEPSEEK_API_KEY || "").trim();
+  const openaiKey = (process.env.OPENAI_API_KEY || "").trim();
 
-  const resolvedProvider: "deepseek" | "openai" =
-    provider || (process.env.DEEPSEEK_API_KEY || customApiKey?.startsWith("sk-") ? "deepseek" : "openai");
+  const apiKey = deepseekKey || openaiKey;
+  const resolvedProvider: "deepseek" | "openai" = deepseekKey ? "deepseek" : "openai";
 
   if (apiKey) {
     try {
