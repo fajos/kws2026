@@ -32,6 +32,7 @@ import {
   HelpCircle,
   ArrowRight,
   SunMoon,
+  BookOpen,
 } from "lucide-react";
 
 // -------------------------------------------------------------
@@ -259,6 +260,7 @@ export default function JournalPage() {
   // Auth & Cloud Sync
   const [user, setUser] = useState<{ id: number; email: string; full_name: string } | null>(null);
   const [token, setToken] = useState<string>("");
+  const [authChecking, setAuthChecking] = useState(true);
   const [syncStatus, setSyncStatus] = useState<"synced" | "saving" | "offline">("offline");
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -286,22 +288,16 @@ export default function JournalPage() {
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. Initial Load: Check token & load journal
+  // 1. Initial Load: Check token & require authentication
   useEffect(() => {
     const savedToken = localStorage.getItem("kws_journal_token") || "";
 
     if (savedToken) {
       setToken(savedToken);
-      fetchUserProfile(savedToken);
+      fetchUserProfile(savedToken).finally(() => setAuthChecking(false));
       fetchCloudJournal(savedToken, 2026);
     } else {
-      // Load from local storage fallback
-      const local = localStorage.getItem("kws_journal_local_state");
-      if (local) {
-        try {
-          setJournalState(JSON.parse(local));
-        } catch {}
-      }
+      setAuthChecking(false);
     }
   }, []);
 
@@ -316,6 +312,10 @@ export default function JournalPage() {
         setUser(data.user);
         setReminderEmail(data.user.email);
         setSyncStatus("synced");
+      } else {
+        setUser(null);
+        setToken("");
+        localStorage.removeItem("kws_journal_token");
       }
     } catch {
       setSyncStatus("offline");
@@ -627,6 +627,169 @@ export default function JournalPage() {
   const currentQuarterPlan = currentGoal.quarterPlans[selectedQuarter] || currentGoal.quarterPlans[1];
 
   const topThreeCount = Object.values(journalState.goals).filter((g) => g.isTopThree).length;
+
+  // -------------------------------------------------------------
+  // Mandatory Auth Gate: Screen rendered when user is not logged in
+  // -------------------------------------------------------------
+  if (authChecking) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${bgMain}`}>
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+          <p className="text-sm font-semibold opacity-70">Securing your journal access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className={`min-h-screen ${bgMain} flex flex-col justify-between font-sans selection:bg-amber-400 selection:text-emerald-950`}>
+        {/* Simple Top Bar */}
+        <header className="p-4 sm:p-6 flex items-center justify-between max-w-5xl mx-auto w-full">
+          <Link
+            href="/"
+            className="text-xs font-bold tracking-wider px-3 py-1.5 rounded-lg border border-amber-400/40 text-amber-500 hover:bg-amber-400/10 transition-colors uppercase inline-flex items-center gap-1.5"
+          >
+            ← KWS 2026 Home
+          </Link>
+          <button
+            onClick={() => setThemeMode(isDark ? "linen" : "dark")}
+            className={`p-1.5 rounded-full border transition-all ${pillLight}`}
+            title="Toggle Theme"
+          >
+            <SunMoon className="w-4 h-4" />
+          </button>
+        </header>
+
+        {/* Main Auth Card */}
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className={`w-full max-w-md p-6 sm:p-8 rounded-3xl border shadow-2xl ${cardBg}`}>
+            <div className="text-center mb-6">
+              <div className="inline-flex p-3 rounded-2xl bg-amber-400/15 border border-amber-400/30 text-amber-500 mb-3">
+                <BookOpen className="w-7 h-7" />
+              </div>
+              <div className="text-[11px] font-extrabold uppercase tracking-widest text-amber-500 mb-1">
+                Kingdom Wealth Summit 2026
+              </div>
+              <h2 className="font-serif font-bold text-2xl sm:text-3xl tracking-tight">
+                Reflective E-Journal
+              </h2>
+              <p className="text-xs sm:text-sm opacity-70 mt-1.5 max-w-sm mx-auto leading-relaxed">
+                Please log in or create an account to access your private annual journal and start planning your year.
+              </p>
+            </div>
+
+            {/* Mode Switcher Tabs */}
+            <div className={`flex rounded-xl p-1 mb-5 border ${isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"}`}>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode("login");
+                  setAuthError("");
+                }}
+                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                  authMode === "login" ? primaryBg : "opacity-60"
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode("register");
+                  setAuthError("");
+                }}
+                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                  authMode === "register" ? primaryBg : "opacity-60"
+                }`}
+              >
+                Create Account
+              </button>
+            </div>
+
+            {authError && (
+              <div className="p-3 rounded-xl text-xs font-semibold bg-red-500/15 border border-red-500/40 text-red-500 mb-4">
+                {authError}
+              </div>
+            )}
+
+            <form onSubmit={handleAuthSubmit} className="space-y-3.5">
+              {authMode === "register" && (
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-70">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={authFullName}
+                    onChange={(e) => setAuthFullName(e.target.value)}
+                    placeholder="e.g. Samuel Adeyemi"
+                    className={`w-full p-3 rounded-xl border text-sm outline-none ${
+                      isDark ? "bg-[#15151C] border-[#2E2E3A] text-white" : "bg-[#FAF8F5] border-[#E8DFD8] text-[#2B1C22]"
+                    }`}
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-70">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className={`w-full p-3 rounded-xl border text-sm outline-none ${
+                    isDark ? "bg-[#15151C] border-[#2E2E3A] text-white" : "bg-[#FAF8F5] border-[#E8DFD8] text-[#2B1C22]"
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-70">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className={`w-full p-3 rounded-xl border text-sm outline-none ${
+                    isDark ? "bg-[#15151C] border-[#2E2E3A] text-white" : "bg-[#FAF8F5] border-[#E8DFD8] text-[#2B1C22]"
+                  }`}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 mt-2 transition-all shadow-md ${primaryBg}`}
+              >
+                {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                <span>{authMode === "login" ? "Sign In & Open Journal" : "Create Account & Enter Journal"}</span>
+              </button>
+            </form>
+
+            <div className="mt-6 pt-5 border-t border-slate-200 dark:border-slate-800 text-center">
+              <p className="text-[11px] opacity-60 leading-normal">
+                🔒 All journal reflections, finances, and goals are stored privately in your personal account and synced between web and mobile.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="p-4 text-center text-xs opacity-50">
+          Kingdom Wealth Summit 2026 • Finish Rich Africa
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen ${bgMain} font-sans transition-colors duration-300 pb-20`}>
