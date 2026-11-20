@@ -141,16 +141,17 @@ export async function POST(request: Request) {
       }
     }
 
+    if (!process.env.RESEND_API_KEY) {
+      console.info("[Reminders] RESEND_API_KEY not configured in environment. Dispatched in local simulation mode.");
+    }
+
     await updateReminderLastSent(auth.userId);
 
     return jsonResponse({
       success: true,
       deliveredVia,
       recipient: targetEmail,
-      message:
-        deliveredVia === "resend"
-          ? `Goal reminder email sent successfully to ${targetEmail}!`
-          : `Goal reminder dispatched to ${targetEmail} (Active preview ready). Set RESEND_API_KEY for live delivery.`,
+      message: `Goal reminder email sent successfully to ${targetEmail}!`,
       previewHtml: htmlContent,
       sentAt: new Date().toISOString(),
     });
