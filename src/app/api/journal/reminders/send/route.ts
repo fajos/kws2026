@@ -123,7 +123,7 @@ export async function POST(request: Request) {
             Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
           },
           body: JSON.stringify({
-            from: process.env.EMAIL_FROM || "KWS Journal <journal@finishrichafrica.com>",
+            from: process.env.EMAIL_FROM || "E-Journal <journal@finishrichafrica.com>",
             to: targetEmail,
             subject: `★ Your ${currentYear} Goal Check-In & Alignment Reminder`,
             html: htmlContent,
