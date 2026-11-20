@@ -1215,8 +1215,8 @@ export default function JournalPage() {
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-70">
                   Yearly Goal Statement
                 </label>
-                <input
-                  type="text"
+                <textarea
+                  rows={2}
                   value={currentGoal.text}
                   onChange={(e) => {
                     const updated: GoalEntry = { ...currentGoal, text: e.target.value };
@@ -1226,7 +1226,7 @@ export default function JournalPage() {
                     });
                   }}
                   placeholder="What is your primary goal in this area for the year?"
-                  className={`w-full p-3 rounded-xl border text-sm outline-none font-sans ${
+                  className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none leading-relaxed break-words ${
                     isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
                   }`}
                 />
@@ -1248,7 +1248,7 @@ export default function JournalPage() {
                     });
                   }}
                   placeholder="Why is achieving this essential to your life and purpose this year?"
-                  className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none ${
+                  className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none leading-relaxed break-words ${
                     isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
                   }`}
                 />
@@ -1259,8 +1259,8 @@ export default function JournalPage() {
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-70">
                   Support &amp; Resources Needed
                 </label>
-                <input
-                  type="text"
+                <textarea
+                  rows={2}
                   value={currentGoal.supportNeeded}
                   onChange={(e) => {
                     const updated: GoalEntry = { ...currentGoal, supportNeeded: e.target.value };
@@ -1270,7 +1270,7 @@ export default function JournalPage() {
                     });
                   }}
                   placeholder="Mentors, books, apps, habits, accountability partner..."
-                  className={`w-full p-3 rounded-xl border text-sm outline-none font-sans ${
+                  className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none leading-relaxed break-words ${
                     isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
                   }`}
                 />
@@ -1288,7 +1288,7 @@ export default function JournalPage() {
                         Quarter {idx + 1} Milestone
                       </div>
                       <textarea
-                        rows={2}
+                        rows={3}
                         value={currentGoal.milestones[qKey]}
                         onChange={(e) => {
                           const updated: GoalEntry = {
@@ -1304,7 +1304,7 @@ export default function JournalPage() {
                           });
                         }}
                         placeholder={`Specific outcome to achieve by end of Q${idx + 1}...`}
-                        className={`w-full p-2.5 rounded-lg border text-xs outline-none resize-none font-sans ${
+                        className={`w-full p-2.5 rounded-lg border text-xs outline-none resize-none font-sans min-h-[72px] leading-relaxed break-words ${
                           isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
                         }`}
                       />
@@ -1345,8 +1345,8 @@ export default function JournalPage() {
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-70">
                   Quarter {selectedQuarter} Theme &amp; Focus
                 </label>
-                <input
-                  type="text"
+                <textarea
+                  rows={2}
                   value={currentQuarterPlan.theme}
                   onChange={(e) => {
                     const updated = {
@@ -1365,7 +1365,7 @@ export default function JournalPage() {
                     });
                   }}
                   placeholder="e.g. Foundation & Keystone Habits"
-                  className={`w-full p-3 rounded-xl border text-sm outline-none font-sans ${
+                  className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none leading-relaxed break-words ${
                     isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
                   }`}
                 />
@@ -1410,7 +1410,7 @@ export default function JournalPage() {
 
                       <div className="space-y-2">
                         {items.map((it, itIdx) => (
-                          <div key={it.id || itIdx} className="flex items-center gap-2">
+                          <div key={it.id || itIdx} className="flex items-start gap-2">
                             <input
                               type="checkbox"
                               checked={it.completed}
@@ -1432,10 +1432,10 @@ export default function JournalPage() {
                                   goals: { ...journalState.goals, [selectedArea]: updated },
                                 });
                               }}
-                              className="rounded text-amber-500"
+                              className="rounded text-amber-500 mt-1 cursor-pointer shrink-0"
                             />
-                            <input
-                              type="text"
+                            <textarea
+                              rows={2}
                               value={it.text}
                               onChange={(e) => {
                                 const newItems = [...items];
@@ -1456,7 +1456,7 @@ export default function JournalPage() {
                                 });
                               }}
                               placeholder="Action target..."
-                              className={`flex-1 p-1.5 rounded-lg border text-xs outline-none ${
+                              className={`flex-1 p-1.5 rounded-lg border text-xs outline-none resize-none leading-relaxed break-words font-sans ${
                                 it.completed ? "line-through opacity-50" : ""
                               } ${isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"}`}
                             />
@@ -1478,7 +1478,7 @@ export default function JournalPage() {
                                   goals: { ...journalState.goals, [selectedArea]: updated },
                                 });
                               }}
-                              className="text-red-400 hover:text-red-600 p-0.5"
+                              className="text-red-400 hover:text-red-600 p-0.5 mt-1 shrink-0"
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -1561,7 +1561,7 @@ export default function JournalPage() {
 
                 <div className="space-y-2">
                   {(currentMonthPlan.keyGoals || []).map((kg, kgIdx) => (
-                    <div key={kg.id || kgIdx} className="flex items-center gap-2">
+                    <div key={kg.id || kgIdx} className="flex items-start gap-2">
                       <input
                         type="checkbox"
                         checked={kg.completed}
@@ -1580,10 +1580,10 @@ export default function JournalPage() {
                             goals: { ...journalState.goals, [selectedArea]: updated },
                           });
                         }}
-                        className="rounded text-amber-500"
+                        className="rounded text-amber-500 mt-1 cursor-pointer shrink-0"
                       />
-                      <input
-                        type="text"
+                      <textarea
+                        rows={2}
                         value={kg.text}
                         onChange={(e) => {
                           const newGoals = [...currentMonthPlan.keyGoals];
@@ -1601,7 +1601,7 @@ export default function JournalPage() {
                           });
                         }}
                         placeholder="Key milestone for this month..."
-                        className={`flex-1 p-2 rounded-lg border text-xs outline-none ${
+                        className={`flex-1 p-2 rounded-lg border text-xs outline-none resize-none leading-relaxed break-words font-sans ${
                           kg.completed ? "line-through opacity-50" : ""
                         } ${isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"}`}
                       />
@@ -1620,7 +1620,7 @@ export default function JournalPage() {
                             goals: { ...journalState.goals, [selectedArea]: updated },
                           });
                         }}
-                        className="text-red-400 hover:text-red-600 p-1"
+                        className="text-red-400 hover:text-red-600 p-1 mt-1 shrink-0"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -1755,7 +1755,7 @@ export default function JournalPage() {
                         });
                       }}
                       placeholder={`Focus for ${day.label}...`}
-                      className={`w-full p-2 rounded-lg border text-xs outline-none resize-none font-sans ${
+                      className={`w-full p-2.5 rounded-lg border text-xs outline-none resize-none font-sans min-h-[110px] leading-relaxed break-words whitespace-pre-wrap ${
                         isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
                       }`}
                     />
@@ -1768,8 +1768,8 @@ export default function JournalPage() {
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-70">
                   Carry Forward &amp; Weekly Reflection
                 </label>
-                <input
-                  type="text"
+                <textarea
+                  rows={3}
                   value={currentWeekPlan.carryForward || ""}
                   onChange={(e) => {
                     const updatedWeek = { ...currentWeekPlan, carryForward: e.target.value };
@@ -1792,7 +1792,7 @@ export default function JournalPage() {
                     });
                   }}
                   placeholder="Items or mindset to carry forward into next week..."
-                  className={`w-full p-3 rounded-xl border text-sm outline-none font-sans ${
+                  className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none leading-relaxed break-words whitespace-pre-wrap ${
                     isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
                   }`}
                 />
@@ -1897,8 +1897,8 @@ export default function JournalPage() {
                   <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-70">
                     One Major Lesson
                   </label>
-                  <input
-                    type="text"
+                  <textarea
+                    rows={2}
                     value={currentMonthPlan.review?.reflection?.oneLesson || ""}
                     onChange={(e) => {
                       const reflection = {
@@ -1919,7 +1919,7 @@ export default function JournalPage() {
                       });
                     }}
                     placeholder="Key insight from this month..."
-                    className={`w-full p-3 rounded-xl border text-sm outline-none ${
+                    className={`w-full p-3 rounded-xl border text-sm outline-none resize-none leading-relaxed break-words font-sans ${
                       isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
                     }`}
                   />
@@ -1929,8 +1929,8 @@ export default function JournalPage() {
                   <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-70">
                     Grateful For
                   </label>
-                  <input
-                    type="text"
+                  <textarea
+                    rows={2}
                     value={currentMonthPlan.review?.reflection?.gratefulFor || ""}
                     onChange={(e) => {
                       const reflection = {
@@ -1951,7 +1951,7 @@ export default function JournalPage() {
                       });
                     }}
                     placeholder="Specific blessings or people..."
-                    className={`w-full p-3 rounded-xl border text-sm outline-none ${
+                    className={`w-full p-3 rounded-xl border text-sm outline-none resize-none leading-relaxed break-words font-sans ${
                       isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
                     }`}
                   />
