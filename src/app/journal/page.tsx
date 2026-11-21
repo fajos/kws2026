@@ -957,7 +957,7 @@ export default function JournalPage() {
                 Reflective Life Planner • Finish Rich Africa
               </div>
               <h2 className="font-serif font-bold text-2xl sm:text-3xl tracking-tight">
-                Reflective E-Journal
+                FRA Journal
               </h2>
               <p className="text-xs sm:text-sm opacity-70 mt-1.5 max-w-sm mx-auto leading-relaxed">
                 Please log in or create an account to access your private annual journal and start planning your year.
@@ -1069,7 +1069,7 @@ export default function JournalPage() {
 
         {/* Footer */}
         <footer className="p-4 text-center text-xs opacity-50">
-          Reflective E-Journal • Finish Rich Africa
+          FRA Journal • Finish Rich Africa
         </footer>
       </div>
     );
@@ -1092,7 +1092,7 @@ export default function JournalPage() {
             </Link>
             <div className="h-4 w-px bg-slate-300 dark:bg-slate-700 hidden sm:block" />
             <h1 className="font-serif font-bold text-lg sm:text-xl tracking-tight hidden sm:block">
-              Reflective E-Journal
+              FRA Journal
             </h1>
           </div>
 

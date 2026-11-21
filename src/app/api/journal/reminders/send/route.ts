@@ -54,7 +54,7 @@ export async function POST(request: Request) {
   <div style="max-width: 600px; margin: 0 auto; background: #FFFFFF; border-radius: 16px; border: 1px solid #E8DFD8; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.06);">
     <!-- Header -->
     <div style="background-color: #7A283C; color: #FFFFFF; padding: 28px 24px; text-align: center;">
-      <h1 style="margin: 0; font-size: 24px; letter-spacing: -0.5px; font-serif: 'Georgia', serif;">Reflective E-Journal</h1>
+      <h1 style="margin: 0; font-size: 24px; letter-spacing: -0.5px; font-serif: 'Georgia', serif;">FRA Journal</h1>
       <p style="margin: 6px 0 0 0; font-size: 14px; opacity: 0.9; color: #FAD4DE;">${currentYear} Goal Reminder & Alignment Check</p>
     </div>
 

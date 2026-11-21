@@ -3,8 +3,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Reflective E-Journal",
-  description: "Privacy Policy for Reflective E-Journal by Fajostech & Kingdom Wealth Summit.",
+  title: "Privacy Policy | FRA Journal",
+  description: "Privacy Policy for FRA Journal by Finish Rich Africa (FRA) and Fajostech.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -26,7 +26,7 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-lg font-bold text-white mb-2">1. Overview & Commitment</h2>
             <p>
-              Reflective E-Journal (&ldquo;the App&rdquo;), developed by Fajostech, is designed to help you organize
+              FRA Journal (&ldquo;the App&rdquo;), developed by Finish Rich Africa (FRA) and Fajostech, is designed to help you organize
               your yearly goals, milestones, reflections, and personal habits. We believe your thoughts, finances,
               and reflections are deeply personal. We do not sell your personal data or journal entries to any third party.
             </p>

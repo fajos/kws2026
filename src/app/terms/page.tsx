@@ -3,8 +3,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Use (EULA) | Reflective E-Journal",
-  description: "Terms of Use and End User License Agreement for Reflective E-Journal.",
+  title: "Terms of Use (EULA) | FRA Journal",
+  description: "Terms of Use and End User License Agreement for FRA Journal.",
 };
 
 export default function TermsOfUsePage() {
@@ -26,7 +26,7 @@ export default function TermsOfUsePage() {
           <section>
             <h2 className="text-lg font-bold text-white mb-2">1. Agreement to Terms</h2>
             <p>
-              By downloading, installing, or accessing Reflective E-Journal (&ldquo;the App&rdquo;), you agree to be bound
+              By downloading, installing, or accessing FRA Journal (&ldquo;the App&rdquo;), developed by Finish Rich Africa (FRA) and Fajostech, you agree to be bound
               by these Terms of Use and the standard Apple End User License Agreement (EULA) available at{" "}
               <a
                 href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
