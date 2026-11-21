@@ -101,7 +101,20 @@ export default function TermsOfUsePage() {
             <p>
               For inquiries regarding these Terms or billing assistance, please contact:
               <br />
-              <strong className="text-emerald-400">support@fajostech.com</strong>
+              Email:{" "}
+              <a href="mailto:fajostech@gmail.com" className="text-emerald-400 hover:underline font-semibold">
+                fajostech@gmail.com
+              </a>
+              <br />
+              Website Support:{" "}
+              <a
+                href="https://fajostech.com/contact"
+                target="_blank"
+                rel="noreferrer"
+                className="text-emerald-400 hover:underline font-semibold"
+              >
+                https://fajostech.com/contact
+              </a>
             </p>
           </section>
         </div>
