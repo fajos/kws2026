@@ -1,4 +1,4 @@
-import { getJournalUserByEmail, getRegistrationByEmail } from "@/lib/db";
+import { getJournalUserByEmail, getRegistrationByEmail, getJournalSubscription } from "@/lib/db";
 import { verifyPassword, generateToken } from "@/lib/auth";
 import { handleOptions, jsonResponse } from "@/lib/cors";
 
@@ -33,6 +33,17 @@ export async function POST(request: Request) {
     const isKwsMember = !!registration;
     const membershipTag = isKwsMember ? "Kingdom Wealth Summit Member" : "E-Journal Member";
 
+    // Subscription status
+    const subscription = await getJournalSubscription(user.id);
+    const isPeriodValid = subscription?.current_period_end
+      ? new Date(subscription.current_period_end).getTime() > Date.now()
+      : true;
+    const isPro = subscription
+      ? subscription.status === "active" ||
+        subscription.status === "trialing" ||
+        (subscription.status === "canceled" && isPeriodValid)
+      : false;
+
     const response = jsonResponse({
       success: true,
       token,
@@ -42,6 +53,8 @@ export async function POST(request: Request) {
         full_name: user.full_name,
         is_kws_member: isKwsMember,
         membership_tag: membershipTag,
+        is_pro: isPro,
+        subscription: subscription || null,
       },
       message: "Logged in successfully",
     });

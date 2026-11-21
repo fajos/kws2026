@@ -74,6 +74,21 @@ export async function initDb() {
     )
   `);
 
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS journal_subscriptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER UNIQUE NOT NULL,
+      status TEXT NOT NULL DEFAULT 'free',
+      tier TEXT NOT NULL DEFAULT 'pro',
+      platform TEXT NOT NULL DEFAULT 'unknown',
+      original_transaction_id TEXT,
+      current_period_end DATETIME,
+      cancel_at_period_end INTEGER DEFAULT 0,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES journal_users(id) ON DELETE CASCADE
+    )
+  `);
+
   isInitialized = true;
 }
 
@@ -213,6 +228,18 @@ export interface JournalReminder {
   created_at: string;
 }
 
+export interface JournalSubscription {
+  id: number;
+  user_id: number;
+  status: "active" | "trialing" | "canceled" | "expired" | "past_due" | "free";
+  tier: string;
+  platform: string;
+  original_transaction_id?: string;
+  current_period_end?: string;
+  cancel_at_period_end: boolean;
+  updated_at: string;
+}
+
 export async function createJournalUser(data: {
   email: string;
   password_hash: string;
@@ -270,8 +297,73 @@ export async function deleteJournalUserAccount(userId: number): Promise<void> {
     args: [userId],
   });
   await db.execute({
+    sql: "DELETE FROM journal_subscriptions WHERE user_id = ?",
+    args: [userId],
+  });
+  await db.execute({
     sql: "DELETE FROM journal_users WHERE id = ?",
     args: [userId],
+  });
+}
+
+export async function getJournalSubscription(userId: number): Promise<JournalSubscription | undefined> {
+  await initDb();
+  const result = await db.execute({
+    sql: "SELECT * FROM journal_subscriptions WHERE user_id = ?",
+    args: [userId],
+  });
+  if (result.rows.length === 0) return undefined;
+  const row = result.rows[0] as any;
+  return {
+    id: Number(row.id),
+    user_id: Number(row.user_id),
+    status: row.status,
+    tier: row.tier,
+    platform: row.platform,
+    original_transaction_id: row.original_transaction_id || undefined,
+    current_period_end: row.current_period_end || undefined,
+    cancel_at_period_end: Boolean(row.cancel_at_period_end),
+    updated_at: row.updated_at,
+  };
+}
+
+export async function upsertJournalSubscription(data: {
+  user_id: number;
+  status: "active" | "trialing" | "canceled" | "expired" | "past_due" | "free";
+  tier?: string;
+  platform?: string;
+  original_transaction_id?: string;
+  current_period_end?: string;
+  cancel_at_period_end?: boolean;
+}): Promise<void> {
+  await initDb();
+  const tier = data.tier || "pro";
+  const platform = data.platform || "unknown";
+  const cancelAtPeriodEnd = data.cancel_at_period_end ? 1 : 0;
+
+  await db.execute({
+    sql: `
+      INSERT INTO journal_subscriptions (
+        user_id, status, tier, platform, original_transaction_id, current_period_end, cancel_at_period_end, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(user_id) DO UPDATE SET
+        status = excluded.status,
+        tier = excluded.tier,
+        platform = excluded.platform,
+        original_transaction_id = COALESCE(excluded.original_transaction_id, journal_subscriptions.original_transaction_id),
+        current_period_end = excluded.current_period_end,
+        cancel_at_period_end = excluded.cancel_at_period_end,
+        updated_at = CURRENT_TIMESTAMP
+    `,
+    args: [
+      data.user_id,
+      data.status,
+      tier,
+      platform,
+      data.original_transaction_id || null,
+      data.current_period_end || null,
+      cancelAtPeriodEnd,
+    ],
   });
 }
 

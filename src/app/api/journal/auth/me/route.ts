@@ -1,5 +1,10 @@
 import { getUserFromRequest } from "@/lib/auth";
-import { getJournalUserById, getRegistrationByEmail, deleteJournalUserAccount } from "@/lib/db";
+import {
+  getJournalUserById,
+  getRegistrationByEmail,
+  deleteJournalUserAccount,
+  getJournalSubscription,
+} from "@/lib/db";
 import { handleOptions, jsonResponse } from "@/lib/cors";
 
 export async function OPTIONS() {
@@ -22,6 +27,17 @@ export async function GET(request: Request) {
     const isKwsMember = !!registration;
     const membershipTag = isKwsMember ? "Kingdom Wealth Summit Member" : "E-Journal Member";
 
+    // Subscription status
+    const subscription = await getJournalSubscription(user.id);
+    const isPeriodValid = subscription?.current_period_end
+      ? new Date(subscription.current_period_end).getTime() > Date.now()
+      : true;
+    const isPro = subscription
+      ? subscription.status === "active" ||
+        subscription.status === "trialing" ||
+        (subscription.status === "canceled" && isPeriodValid)
+      : false;
+
     return jsonResponse({
       user: {
         id: user.id,
@@ -30,6 +46,8 @@ export async function GET(request: Request) {
         created_at: user.created_at,
         is_kws_member: isKwsMember,
         membership_tag: membershipTag,
+        is_pro: isPro,
+        subscription: subscription || null,
       },
     });
   } catch (error) {
