@@ -70,11 +70,33 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-bold text-white mb-2">5. User Control & Account Deletion</h2>
+            <h2 className="text-lg font-bold text-white mb-2">5. User Control &amp; Account Deletion</h2>
             <p>
-              In accordance with Apple App Store and Google Play requirements, you have full control over your data. You may
-              permanently delete your account and all associated cloud entries at any time directly in the app under
-              <strong> Settings &gt; Delete Account & Wipe Cloud Data</strong>, or by contacting us.
+              In accordance with Apple App Store Guideline 5.1.1(v) and Google Play Data Safety policies, you have
+              full control over your personal data. You may permanently delete your account and all associated cloud entries
+              at any time through either of the following methods:
+            </p>
+            <ul className="list-disc pl-5 space-y-1.5 text-slate-300 my-2">
+              <li>
+                <strong className="text-slate-100">In-App Immediate Deletion:</strong> In the mobile app, navigate to{" "}
+                <strong>Settings &gt; Cloud Backup &amp; Account &gt; Delete Account &amp; Wipe Cloud Data</strong> to
+                instantly erase your account and all cloud data.
+              </li>
+              <li>
+                <strong className="text-slate-100">Web Deletion Request Portal:</strong> If you uninstalled the app or
+                prefer web submission, submit a request at our dedicated deletion page:{" "}
+                <Link
+                  href="/delete-account"
+                  className="text-emerald-400 hover:text-emerald-300 font-semibold underline"
+                >
+                  https://kws2026.vercel.app/delete-account
+                </Link>
+                .
+              </li>
+            </ul>
+            <p className="text-xs text-slate-400 mt-2">
+              All journal entries, yearly targets, quarterly milestones, reflections, habits, and user credentials will be
+              permanently purged from our database. No personal data is retained.
             </p>
           </section>
 

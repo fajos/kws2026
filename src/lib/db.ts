@@ -89,6 +89,19 @@ export async function initDb() {
     )
   `);
 
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS journal_deletion_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      user_id INTEGER,
+      reason TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      ip_address TEXT,
+      requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      completed_at DATETIME
+    )
+  `);
+
   isInitialized = true;
 }
 
@@ -440,7 +453,52 @@ export async function updateReminderLastSent(userId: number): Promise<void> {
   });
 }
 
+export interface JournalDeletionRequest {
+  id?: number;
+  email: string;
+  user_id?: number | null;
+  reason?: string | null;
+  status: "pending" | "completed" | "cancelled";
+  ip_address?: string | null;
+  requested_at?: string;
+  completed_at?: string | null;
+}
+
+export async function createJournalDeletionRequest(data: {
+  email: string;
+  userId?: number | null;
+  reason?: string | null;
+  status?: "pending" | "completed" | "cancelled";
+  ipAddress?: string | null;
+}): Promise<void> {
+  await initDb();
+  await db.execute({
+    sql: `
+      INSERT INTO journal_deletion_requests (email, user_id, reason, status, ip_address, completed_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `,
+    args: [
+      data.email.toLowerCase().trim(),
+      data.userId || null,
+      data.reason || null,
+      data.status || "pending",
+      data.ipAddress || null,
+      data.status === "completed" ? new Date().toISOString() : null,
+    ],
+  });
+}
+
+export async function getJournalDeletionRequests(): Promise<JournalDeletionRequest[]> {
+  await initDb();
+  const result = await db.execute({
+    sql: "SELECT * FROM journal_deletion_requests ORDER BY requested_at DESC",
+    args: [],
+  });
+  return result.rows as unknown as JournalDeletionRequest[];
+}
+
 // Re-export Admin Journal Helpers
 export * from "./adminJournal";
+
 
 

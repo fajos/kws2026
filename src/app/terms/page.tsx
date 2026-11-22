@@ -89,10 +89,18 @@ export default function TermsOfUsePage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-bold text-white mb-2">5. Termination & Account Deletion</h2>
+            <h2 className="text-lg font-bold text-white mb-2">5. Termination &amp; Account Deletion</h2>
             <p>
-              You may terminate this agreement at any time by deleting your account inside the App (Settings &gt; Delete Account)
-              and cancelling any active store subscriptions through your Apple or Google account.
+              You may terminate this agreement at any time by deleting your account inside the App (
+              <strong>Settings &gt; Cloud Backup &amp; Account &gt; Delete Account &amp; Wipe Cloud Data</strong>) or by
+              submitting a deletion request via our public web portal at{" "}
+              <Link
+                href="/delete-account"
+                className="text-emerald-400 hover:text-emerald-300 font-semibold underline"
+              >
+                https://kws2026.vercel.app/delete-account
+              </Link>
+              , and cancelling any active store subscriptions through your Apple or Google account.
             </p>
           </section>
 
