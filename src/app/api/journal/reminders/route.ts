@@ -16,11 +16,11 @@ export async function GET(request: Request) {
     const reminder = await getJournalReminder(auth.userId);
     return jsonResponse({
       reminder: reminder || {
-        frequency: "weekly",
+        frequency: "disabled",
         day_of_week: "Monday",
         time_of_day: "08:00",
         email: auth.email,
-        enabled: true,
+        enabled: false,
       },
     });
   } catch (error) {

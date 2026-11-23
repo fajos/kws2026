@@ -374,7 +374,7 @@ export default function JournalPage() {
 
   // Email Reminders Modal
   const [showReminderModal, setShowReminderModal] = useState(false);
-  const [reminderFreq, setReminderFreq] = useState<"weekly" | "daily" | "monthly" | "disabled">("weekly");
+  const [reminderFreq, setReminderFreq] = useState<"weekly" | "daily" | "monthly" | "disabled">("disabled");
   const [reminderDay, setReminderDay] = useState("Monday");
   const [reminderTime, setReminderTime] = useState("08:00");
   const [reminderEmail, setReminderEmail] = useState("");
