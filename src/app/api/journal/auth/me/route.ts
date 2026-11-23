@@ -4,6 +4,7 @@ import {
   getRegistrationByEmail,
   deleteJournalUserAccount,
   getJournalSubscription,
+  isJournalUserPro,
 } from "@/lib/db";
 import { handleOptions, jsonResponse } from "@/lib/cors";
 
@@ -29,14 +30,7 @@ export async function GET(request: Request) {
 
     // Subscription status
     const subscription = await getJournalSubscription(user.id);
-    const isPeriodValid = subscription?.current_period_end
-      ? new Date(subscription.current_period_end).getTime() > Date.now()
-      : true;
-    const isPro = subscription
-      ? subscription.status === "active" ||
-        subscription.status === "trialing" ||
-        (subscription.status === "canceled" && isPeriodValid)
-      : false;
+    const isPro = await isJournalUserPro(user.id, user.email);
 
     return jsonResponse({
       user: {

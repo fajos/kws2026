@@ -36,6 +36,10 @@ import {
   Target,
   AlertTriangle,
   ShieldAlert,
+  Crown,
+  Cloud,
+  Lock,
+  Smartphone,
 } from "lucide-react";
 import { getWeeksForMonth } from "@/lib/journalCalendar";
 
@@ -344,11 +348,23 @@ export default function JournalPage() {
   const [customYearInput, setCustomYearInput] = useState("");
 
   // Auth & Cloud Sync
-  const [user, setUser] = useState<{ id: number; email: string; full_name: string; is_summit_attendee?: boolean } | null>(null);
+  interface JournalUser {
+    id: number;
+    email: string;
+    full_name: string;
+    is_kws_member?: boolean;
+    membership_tag?: string;
+    is_pro?: boolean;
+    subscription?: any;
+    is_summit_attendee?: boolean;
+  }
+  const [user, setUser] = useState<JournalUser | null>(null);
   const [token, setToken] = useState<string>("");
   const [authChecking, setAuthChecking] = useState(true);
   const [syncStatus, setSyncStatus] = useState<"synced" | "saving" | "offline">("offline");
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showProModal, setShowProModal] = useState(false);
+  const [proFeatureContext, setProFeatureContext] = useState<"ai" | "sync" | "reminders" | "general">("general");
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -410,7 +426,7 @@ export default function JournalPage() {
         const data = await res.json();
         setUser(data.user);
         setReminderEmail(data.user.email);
-        setSyncStatus("synced");
+        setSyncStatus(data.user?.is_pro ? "synced" : "offline");
       } else {
         setUser(null);
         setToken("");
@@ -448,7 +464,7 @@ export default function JournalPage() {
     setJournalState(newState);
     localStorage.setItem("kws_journal_local_state", JSON.stringify(newState));
 
-    if (!token) {
+    if (!token || !user?.is_pro) {
       setSyncStatus("offline");
       return;
     }
@@ -640,13 +656,28 @@ export default function JournalPage() {
 
   // AI Decomposition
   async function handleRunDecomposition() {
+    if (!token) {
+      setShowAiModal(false);
+      setShowAuthModal(true);
+      return;
+    }
+    if (!user?.is_pro) {
+      setShowAiModal(false);
+      setProFeatureContext("ai");
+      setShowProModal(true);
+      return;
+    }
+
     setAiLoading(true);
     setDecomposedPreview(null);
 
     try {
       const res = await fetch("/api/journal/ai-decompose", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           area: aiTargetArea,
           goalText: aiGoalText,
@@ -657,10 +688,17 @@ export default function JournalPage() {
       const data = await res.json();
       if (res.ok && data.plan) {
         setDecomposedPreview(data.plan);
+      } else if (res.status === 403 || data.requires_pro) {
+        setShowAiModal(false);
+        setProFeatureContext("ai");
+        setShowProModal(true);
+      } else if (res.status === 401 || data.requires_auth) {
+        setShowAiModal(false);
+        setShowAuthModal(true);
       } else {
         alert(data.error || "Decomposition failed");
       }
-    } catch (err) {
+    } catch {
       alert("Error contacting AI decomposition service");
     } finally {
       setAiLoading(false);
@@ -806,7 +844,14 @@ export default function JournalPage() {
   // Email Reminders Save & Test Send
   async function handleSaveReminders(sendTest: boolean = false) {
     if (!token) {
+      setShowReminderModal(false);
       setShowAuthModal(true);
+      return;
+    }
+    if (!user?.is_pro) {
+      setShowReminderModal(false);
+      setProFeatureContext("reminders");
+      setShowProModal(true);
       return;
     }
 
@@ -814,7 +859,7 @@ export default function JournalPage() {
     setReminderMsg("");
 
     try {
-      await fetch("/api/journal/reminders", {
+      const res = await fetch("/api/journal/reminders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -827,6 +872,13 @@ export default function JournalPage() {
           email: reminderEmail,
         }),
       });
+
+      if (res.status === 403) {
+        setShowReminderModal(false);
+        setProFeatureContext("reminders");
+        setShowProModal(true);
+        return;
+      }
 
       if (sendTest) {
         const testRes = await fetch("/api/journal/reminders/send", {
@@ -1110,12 +1162,28 @@ export default function JournalPage() {
 
             {/* Email Reminders Button */}
             <button
-              onClick={() => setShowReminderModal(true)}
+              onClick={() => {
+                if (!token) {
+                  setShowAuthModal(true);
+                  return;
+                }
+                if (!user?.is_pro) {
+                  setProFeatureContext("reminders");
+                  setShowProModal(true);
+                  return;
+                }
+                setShowReminderModal(true);
+              }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${pillLight} hover:opacity-90`}
               title="Configure Email Reminders"
             >
               <Bell className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Reminders</span>
+              {!user?.is_pro && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-500">
+                  PRO
+                </span>
+              )}
             </button>
 
             {/* Theme Toggle */}
@@ -1130,28 +1198,62 @@ export default function JournalPage() {
             {/* User Account / Sync Status */}
             {user ? (
               <div className="flex items-center gap-2">
-                <div
-                  className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${
-                    syncStatus === "synced"
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!user.is_pro) {
+                      setProFeatureContext("sync");
+                      setShowProModal(true);
+                    }
+                  }}
+                  className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${
+                    user.is_pro && syncStatus === "synced"
                       ? "text-emerald-500 border-emerald-500/30 bg-emerald-500/10"
-                      : "text-amber-500 border-amber-500/30 bg-amber-500/10"
+                      : user.is_pro && syncStatus === "saving"
+                      ? "text-amber-500 border-amber-500/30 bg-amber-500/10"
+                      : "text-slate-400 border-slate-500/20 bg-slate-500/10 hover:border-amber-400/50"
                   }`}
+                  title={user.is_pro ? "Cloud Sync Active" : "Local Storage (Upgrade to Pro for multi-device Cloud Sync)"}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full ${syncStatus === "synced" ? "bg-emerald-500" : "bg-amber-500 animate-ping"}`} />
-                  <span>{syncStatus === "synced" ? "Cloud Synced" : "Saving..."}</span>
-                </div>
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      user.is_pro && syncStatus === "synced"
+                        ? "bg-emerald-500"
+                        : user.is_pro && syncStatus === "saving"
+                        ? "bg-amber-500 animate-ping"
+                        : "bg-slate-400"
+                    }`}
+                  />
+                  <span>
+                    {user.is_pro
+                      ? syncStatus === "synced"
+                        ? "Cloud Synced"
+                        : "Saving..."
+                      : "Local Storage (Free)"}
+                  </span>
+                </button>
 
-                {/* Membership Badge */}
-                <div
-                  className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                    user.is_summit_attendee
-                      ? "bg-amber-400/15 border-amber-400/40 text-amber-500"
-                      : "bg-slate-500/10 border-slate-500/20 text-slate-400"
-                  }`}
-                >
-                  <span>★</span>
-                  <span>{user.is_summit_attendee ? "KWS Member" : "E-Journal User"}</span>
-                </div>
+                {/* Membership / Pro Badge */}
+                {user.is_pro ? (
+                  <div
+                    className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border bg-amber-400/15 border-amber-400/40 text-amber-500 shadow-sm"
+                  >
+                    <span>★</span>
+                    <span>{user.is_kws_member ? "KWS Member" : "PRO"}</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProFeatureContext("general");
+                      setShowProModal(true);
+                    }}
+                    className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-400/20 border border-amber-400/40 text-amber-500 hover:bg-amber-400/30 transition-all"
+                  >
+                    <span>★</span>
+                    <span>Upgrade to Pro</span>
+                  </button>
+                )}
 
                 <div className="flex items-center gap-1.5 text-xs font-medium">
                   <span className="hidden md:inline font-semibold">{user.full_name}</span>
@@ -1418,6 +1520,15 @@ export default function JournalPage() {
                         <div className="flex items-center justify-between mb-3">
                           <button
                             onClick={() => {
+                              if (!token) {
+                                setShowAuthModal(true);
+                                return;
+                              }
+                              if (!user?.is_pro) {
+                                setProFeatureContext("ai");
+                                setShowProModal(true);
+                                return;
+                              }
                               setAiTargetArea(item.key);
                               setAiGoalText(goal.text);
                               setShowAiModal(true);
@@ -1428,6 +1539,11 @@ export default function JournalPage() {
                           >
                             <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
                             <span>✨ Auto-Decompose with AI</span>
+                            {!user?.is_pro && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-400/30 text-amber-400">
+                                PRO
+                              </span>
+                            )}
                           </button>
 
                           {/* Priority Selector 1, 2, 3 */}
@@ -1546,6 +1662,15 @@ export default function JournalPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => {
+                      if (!token) {
+                        setShowAuthModal(true);
+                        return;
+                      }
+                      if (!user?.is_pro) {
+                        setProFeatureContext("ai");
+                        setShowProModal(true);
+                        return;
+                      }
                       setAiTargetArea(selectedArea);
                       setAiGoalText(currentGoal.text);
                       setShowAiModal(true);
@@ -1554,6 +1679,11 @@ export default function JournalPage() {
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                     <span>✨ Auto-Decompose with AI</span>
+                    {!user?.is_pro && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-400/30 text-amber-400">
+                        PRO
+                      </span>
+                    )}
                   </button>
                   <button
                     onClick={() => setGoalToDelete(selectedArea)}
@@ -2513,6 +2643,11 @@ export default function JournalPage() {
               <div className="flex items-center gap-2">
                 <Bell className="w-5 h-5 text-amber-500" />
                 <h3 className="font-serif font-bold text-lg">Email Goal Reminders</h3>
+                {!user?.is_pro && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-400/20 text-amber-500 border border-amber-400/40">
+                    ★ PRO
+                  </span>
+                )}
               </div>
               <button onClick={() => setShowReminderModal(false)} className="p-1 opacity-60 hover:opacity-100">
                 <X className="w-5 h-5" />
@@ -2520,6 +2655,18 @@ export default function JournalPage() {
             </div>
 
             <div className="py-4 space-y-4">
+              {!user?.is_pro && (
+                <div className="p-3 rounded-xl border border-amber-400/40 bg-amber-400/10 text-xs flex items-start gap-2.5">
+                  <Crown className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-amber-500">FRA Journal Pro Feature</div>
+                    <p className="text-[11px] opacity-80 leading-relaxed mt-0.5">
+                      Scheduled automated check-ins require an active FRA Journal Pro subscription or complimentary Kingdom Wealth Summit attendee membership.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <p className="text-xs opacity-75 leading-relaxed">
                 Receive encouraging check-ins with your top 3 annual goals, current weekly focus, and direct reflective link.
               </p>
@@ -2584,23 +2731,40 @@ export default function JournalPage() {
               </div>
 
               <div className="flex items-center gap-2 pt-2">
-                <button
-                  type="button"
-                  disabled={reminderLoading}
-                  onClick={() => handleSaveReminders(false)}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 ${primaryBg}`}
-                >
-                  {reminderLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                  <span>Save Settings</span>
-                </button>
-                <button
-                  type="button"
-                  disabled={reminderLoading}
-                  onClick={() => handleSaveReminders(true)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold border border-amber-400/50 text-amber-500 hover:bg-amber-400/10 transition-colors"
-                >
-                  Send Test Now
-                </button>
+                {!user?.is_pro ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowReminderModal(false);
+                      setProFeatureContext("reminders");
+                      setShowProModal(true);
+                    }}
+                    className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 ${primaryBg}`}
+                  >
+                    <Crown className="w-3.5 h-3.5" />
+                    <span>Unlock Reminders with Pro</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      disabled={reminderLoading}
+                      onClick={() => handleSaveReminders(false)}
+                      className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 ${primaryBg}`}
+                    >
+                      {reminderLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                      <span>Save Settings</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={reminderLoading}
+                      onClick={() => handleSaveReminders(true)}
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold border border-amber-400/50 text-amber-500 hover:bg-amber-400/10 transition-colors"
+                    >
+                      Send Test Now
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -2626,6 +2790,32 @@ export default function JournalPage() {
             </div>
 
             <div className="py-4 space-y-4">
+              {!user?.is_pro && (
+                <div className="p-3.5 rounded-xl border border-amber-400/40 bg-amber-400/10 flex items-start gap-3">
+                  <Crown className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <div className="text-xs font-bold text-amber-500">
+                      FRA Journal Pro Feature
+                    </div>
+                    <p className="text-[11px] opacity-80 leading-relaxed">
+                      AI Goal Decomposition requires an active FRA Journal Pro subscription or complimentary Kingdom Wealth Summit attendee membership.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAiModal(false);
+                        setProFeatureContext("ai");
+                        setShowProModal(true);
+                      }}
+                      className="mt-1.5 inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-colors"
+                    >
+                      <span>Unlock with Pro</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1 opacity-70">
                   Life Area &amp; Yearly Goal
@@ -2658,20 +2848,28 @@ export default function JournalPage() {
                   </div>
                 </div>
                 <div className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-400/20 text-amber-500 border border-amber-400/30">
-                  AI Ready
+                  {user?.is_pro ? "AI Ready" : "Pro Only"}
                 </div>
               </div>
 
               {/* Generate Button */}
               <button
                 type="button"
-                disabled={aiLoading || !aiGoalText.trim()}
+                disabled={aiLoading || !aiGoalText.trim() || !user?.is_pro}
                 onClick={handleRunDecomposition}
-                className={`w-full py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 ${primaryBg}`}
+                className={`w-full py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 ${
+                  !user?.is_pro
+                    ? "opacity-60 cursor-not-allowed bg-slate-500/20 text-slate-400 border border-slate-500/30"
+                    : primaryBg
+                }`}
               >
                 {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 <span>
-                  {aiLoading ? "Generating Intelligent Breakdown..." : "Decompose Goal into Quarters, Months & Weeks"}
+                  {!user?.is_pro
+                    ? "Locked — Upgrade to Pro to Decompose"
+                    : aiLoading
+                    ? "Generating Intelligent Breakdown..."
+                    : "Decompose Goal into Quarters, Months & Weeks"}
                 </span>
               </button>
 
@@ -2963,6 +3161,148 @@ export default function JournalPage() {
               >
                 {deleteAccountLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                 <span>Delete Account Forever</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL: PRO SUBSCRIPTION / UPGRADE EXPLANATION                 */}
+      {/* ------------------------------------------------------------- */}
+      {showProModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade">
+          <div className={`w-full max-w-lg p-6 sm:p-7 rounded-2xl border shadow-2xl ${cardBg}`}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-500">
+                  <Crown className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-lg leading-tight">
+                    FRA Journal Pro
+                  </h3>
+                  <p className="text-[11px] opacity-60">
+                    {proFeatureContext === "ai"
+                      ? "AI Goal Decomposition is a Pro Feature"
+                      : proFeatureContext === "sync"
+                      ? "Cross-Device Cloud Sync is a Pro Feature"
+                      : proFeatureContext === "reminders"
+                      ? "Email Reminders are a Pro Feature"
+                      : "Elevate your intentional living experience"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowProModal(false)}
+                className="p-1.5 opacity-60 hover:opacity-100 rounded-full transition-opacity"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-4">
+              {/* Feature Highlights */}
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-400/5 border border-amber-400/20">
+                  <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-bold text-amber-500">
+                      AI Goal Cascading &amp; Decomposition
+                    </div>
+                    <div className="text-[11px] opacity-75 leading-relaxed">
+                      Transform high-level yearly visions into 4 quarterly milestones, 12 monthly objectives, and calendar-synced weekly habits with one click.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-400/5 border border-blue-400/20">
+                  <Cloud className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-bold text-blue-400">
+                      Cross-Device Real-Time Cloud Sync
+                    </div>
+                    <div className="text-[11px] opacity-75 leading-relaxed">
+                      Instant synchronization across iOS, Android, and Web browsers. Never lose a thought or goal.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-purple-400/5 border border-purple-400/20">
+                  <Bell className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-bold text-purple-400">
+                      Automated Email Check-Ins &amp; Cadence
+                    </div>
+                    <div className="text-[11px] opacity-75 leading-relaxed">
+                      Scheduled weekly planning and monthly review prompts delivered directly to your inbox to keep momentum high.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-emerald-400/5 border border-emerald-400/20">
+                  <Calendar className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-bold text-emerald-400">
+                      Multi-Year Rolling Archive &amp; Export
+                    </div>
+                    <div className="text-[11px] opacity-75 leading-relaxed">
+                      Preserve every year’s achievements and reflections with unlimited multi-year tracking and future planning.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* How to Unlock Pro */}
+              <div className="p-4 rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-400/10 via-amber-400/5 to-transparent space-y-2">
+                <div className="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                  <span>How to Unlock FRA Journal Pro</span>
+                </div>
+                <div className="text-xs opacity-85 space-y-2 leading-relaxed">
+                  <p>
+                    <strong>1. Kingdom Wealth Summit Attendees:</strong> You receive complimentary full Pro access! Simply log in with your Summit registration email.
+                  </p>
+                  <p>
+                    <strong>2. Mobile App Subscription ($6.99/year):</strong> Subscribe inside the FRA E-Journal mobile app (Google Play / App Store). Sign into your web journal with the same email to unlock Pro here automatically.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              {!token ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProModal(false);
+                    setAuthMode("login");
+                    setShowAuthModal(true);
+                  }}
+                  className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 ${primaryBg}`}
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span>Sign In with Summit or Pro Account</span>
+                </button>
+              ) : !user?.is_kws_member ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProModal(false);
+                    handleLogout();
+                    setAuthMode("login");
+                    setShowAuthModal(true);
+                  }}
+                  className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border ${pillLight}`}
+                >
+                  <span>Switch to Summit Registration Email</span>
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setShowProModal(false)}
+                className={`w-full ${!token || !user?.is_kws_member ? "sm:w-32" : ""} py-2.5 rounded-xl text-xs font-bold border ${pillLight} hover:opacity-80 transition-opacity`}
+              >
+                Close
               </button>
             </div>
           </div>
