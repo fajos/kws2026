@@ -13,7 +13,20 @@ export async function GET(request: Request) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
+    const isPro = await isJournalUserPro(auth.userId, auth.email);
     const reminder = await getJournalReminder(auth.userId);
+
+    // If the user is not Pro, email reminders must always report as disabled
+    if (!isPro && reminder) {
+      return jsonResponse({
+        reminder: {
+          ...reminder,
+          frequency: "disabled",
+          enabled: false,
+        },
+      });
+    }
+
     return jsonResponse({
       reminder: reminder || {
         frequency: "disabled",
