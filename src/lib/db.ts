@@ -467,6 +467,15 @@ export async function getJournalReminder(userId: number): Promise<JournalReminde
   return result.rows[0] as unknown as JournalReminder;
 }
 
+export async function getActiveReminders(): Promise<JournalReminder[]> {
+  await initDb();
+  const result = await db.execute({
+    sql: "SELECT * FROM journal_email_reminders WHERE frequency != 'disabled'",
+    args: [],
+  });
+  return result.rows as unknown as JournalReminder[];
+}
+
 export async function updateReminderLastSent(userId: number): Promise<void> {
   await initDb();
   await db.execute({
