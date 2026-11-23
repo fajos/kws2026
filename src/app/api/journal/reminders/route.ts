@@ -1,5 +1,5 @@
 import { getUserFromRequest } from "@/lib/auth";
-import { getJournalReminder, saveJournalReminder } from "@/lib/db";
+import { getJournalReminder, saveJournalReminder, isJournalUserPro } from "@/lib/db";
 import { handleOptions, jsonResponse } from "@/lib/cors";
 
 export async function OPTIONS() {
@@ -34,6 +34,17 @@ export async function POST(request: Request) {
     const auth = getUserFromRequest(request);
     if (!auth) {
       return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
+    const isPro = await isJournalUserPro(auth.userId, auth.email);
+    if (!isPro) {
+      return jsonResponse(
+        {
+          error: "Automated Email Reminders requires an active FRA Journal Pro subscription.",
+          requires_pro: true,
+        },
+        403
+      );
     }
 
     const body = await request.json();

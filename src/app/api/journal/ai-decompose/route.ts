@@ -1,3 +1,5 @@
+import { getUserFromRequest } from "@/lib/auth";
+import { isJournalUserPro } from "@/lib/db";
 import { decomposeGoal, LifeArea } from "@/lib/aiDecompose";
 import { handleOptions, jsonResponse } from "@/lib/cors";
 
@@ -7,6 +9,28 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
+    const auth = getUserFromRequest(request);
+    if (!auth) {
+      return jsonResponse(
+        {
+          error: "Authentication required. Please sign in to access AI Goal Decomposition.",
+          requires_auth: true,
+        },
+        401
+      );
+    }
+
+    const isPro = await isJournalUserPro(auth.userId, auth.email);
+    if (!isPro) {
+      return jsonResponse(
+        {
+          error: "AI Goal Decomposition requires an active FRA Journal Pro subscription.",
+          requires_pro: true,
+        },
+        403
+      );
+    }
+
     const body = await request.json();
     const { area, goalText, year } = body;
 

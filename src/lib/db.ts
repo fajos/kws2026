@@ -340,6 +340,28 @@ export async function getJournalSubscription(userId: number): Promise<JournalSub
   };
 }
 
+export async function isJournalUserPro(userId: number, email?: string): Promise<boolean> {
+  await initDb();
+  // 1. If email is provided, check if user is a Kingdom Wealth Summit attendee
+  if (email) {
+    const reg = await getRegistrationByEmail(email);
+    if (reg) return true;
+  }
+  // 2. Check active subscription record
+  const sub = await getJournalSubscription(userId);
+  if (!sub) return false;
+
+  const isPeriodValid = sub.current_period_end
+    ? new Date(sub.current_period_end).getTime() > Date.now()
+    : true;
+
+  return (
+    sub.status === "active" ||
+    sub.status === "trialing" ||
+    (sub.status === "canceled" && isPeriodValid)
+  );
+}
+
 export async function upsertJournalSubscription(data: {
   user_id: number;
   status: "active" | "trialing" | "canceled" | "expired" | "past_due" | "free";
