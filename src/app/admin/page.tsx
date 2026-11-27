@@ -29,6 +29,7 @@ import {
   ChevronDown,
   UserCheck,
 } from "lucide-react";
+import { formatUtcPlus1Time } from "@/lib/dateUtils";
 import type { AdminJournalMember, JournalAdminStats } from "@/lib/adminJournal";
 
 interface Registration {
@@ -605,7 +606,7 @@ export default function AdminPage() {
                                       </span>
                                       {reg.checked_in_at && (
                                         <p className="text-[10px] text-emerald-300">
-                                          {new Date(reg.checked_in_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({reg.checkin_method || "self"})
+                                          {formatUtcPlus1Time(reg.checked_in_at)} ({reg.checkin_method || "self"})
                                         </p>
                                       )}
                                     </div>

@@ -1,6 +1,7 @@
 import { createClient } from "@libsql/client";
 import path from "path";
 import fs from "fs";
+import { getUtcPlus1String } from "./dateUtils";
 
 const isVercel = process.env.VERCEL === "1";
 const dbUrl =
@@ -232,15 +233,16 @@ export async function markRegistrationAttendance(
   method: string = "self"
 ): Promise<Registration | undefined> {
   await initDb();
+  const nowWat = getUtcPlus1String();
   await db.execute({
     sql: `
       UPDATE registrations 
       SET attended = 1, 
-          checked_in_at = COALESCE(checked_in_at, CURRENT_TIMESTAMP), 
+          checked_in_at = COALESCE(checked_in_at, ?), 
           checkin_method = ? 
       WHERE id = ?
     `,
-    args: [method, id],
+    args: [nowWat, method, id],
   });
 
   const result = await db.execute({
@@ -259,15 +261,16 @@ export async function toggleRegistrationAttendance(
 ): Promise<Registration | undefined> {
   await initDb();
   if (attended) {
+    const nowWat = getUtcPlus1String();
     await db.execute({
       sql: `
         UPDATE registrations 
         SET attended = 1, 
-            checked_in_at = CURRENT_TIMESTAMP, 
+            checked_in_at = ?, 
             checkin_method = ? 
         WHERE id = ?
       `,
-      args: [method, id],
+      args: [nowWat, method, id],
     });
   } else {
     await db.execute({

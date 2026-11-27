@@ -22,6 +22,7 @@ import {
   User,
   ShieldCheck,
 } from "lucide-react";
+import { formatUtcPlus1Time } from "@/lib/dateUtils";
 
 interface RegistrationRecord {
   id: number;
@@ -492,11 +493,8 @@ export default function AttendancePage() {
                     <Clock className="w-3.5 h-3.5 text-amber-400" />
                     <span>
                       {matchedRecord.checked_in_at
-                        ? new Date(matchedRecord.checked_in_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "Just now"}
+                        ? formatUtcPlus1Time(matchedRecord.checked_in_at)
+                        : "Just now (WAT / UTC+1)"}
                     </span>
                   </span>
                 </div>

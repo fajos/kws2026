@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getAllRegistrations, getStats } from "@/lib/db";
+import { formatUtcPlus1Full } from "@/lib/dateUtils";
 
 export async function GET(request: Request) {
   try {
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
         "Email",
         "Phone",
         "Attendance Status",
-        "Check-In Time",
+        "Check-In Time (UTC+1)",
         "Check-In Method",
         "Attendance Type",
         "Occupation",
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
             `"${(r.email || "").replace(/"/g, '""')}"`,
             `"${(r.phone || "").replace(/"/g, '""')}"`,
             `"${r.attended ? "Attended" : "Not Checked In"}"`,
-            `"${r.checked_in_at || "N/A"}"`,
+            `"${formatUtcPlus1Full(r.checked_in_at)}"`,
             `"${r.checkin_method || "N/A"}"`,
             `"${r.attendance_type}"`,
             `"${(r.occupation || "").replace(/"/g, '""')}"`,
