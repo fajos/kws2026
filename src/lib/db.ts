@@ -34,9 +34,22 @@ export async function initDb() {
       city_country TEXT,
       attendance_type TEXT NOT NULL,
       expectations TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      attended INTEGER DEFAULT 0,
+      checked_in_at DATETIME,
+      checkin_method TEXT DEFAULT 'self'
     )
   `);
+
+  try {
+    await db.execute("ALTER TABLE registrations ADD COLUMN attended INTEGER DEFAULT 0");
+  } catch {}
+  try {
+    await db.execute("ALTER TABLE registrations ADD COLUMN checked_in_at DATETIME");
+  } catch {}
+  try {
+    await db.execute("ALTER TABLE registrations ADD COLUMN checkin_method TEXT DEFAULT 'self'");
+  } catch {}
 
   await db.execute(`
     CREATE TABLE IF NOT EXISTS journal_users (
@@ -116,6 +129,9 @@ export interface Registration {
   attendance_type: "in-person" | "virtual";
   expectations?: string;
   created_at?: string;
+  attended?: number | boolean;
+  checked_in_at?: string;
+  checkin_method?: string;
 }
 
 export async function createRegistration(
@@ -127,8 +143,8 @@ export async function createRegistration(
 
   const result = await db.execute({
     sql: `
-      INSERT INTO registrations (reference_code, full_name, email, phone, occupation, city_country, attendance_type, expectations)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO registrations (reference_code, full_name, email, phone, occupation, city_country, attendance_type, expectations, attended, checked_in_at, checkin_method)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, 'self')
     `,
     args: [
       reference_code,
@@ -146,6 +162,9 @@ export async function createRegistration(
     id: Number(result.lastInsertRowid || 0),
     reference_code,
     ...data,
+    attended: 0,
+    checked_in_at: undefined,
+    checkin_method: "self",
   };
 }
 
@@ -154,8 +173,117 @@ export async function getRegistrationByEmail(
 ): Promise<Registration | undefined> {
   await initDb();
   const result = await db.execute({
-    sql: "SELECT * FROM registrations WHERE email = ?",
-    args: [email],
+    sql: "SELECT * FROM registrations WHERE LOWER(email) = LOWER(?)",
+    args: [email.trim().toLowerCase()],
+  });
+
+  if (result.rows.length === 0) return undefined;
+  return result.rows[0] as unknown as Registration;
+}
+
+/**
+ * Searches for an attendee by Email, Phone, or Reference Code.
+ * Handles variations in phone number formats (spaces, hyphens, country codes).
+ */
+export async function findRegistrationForAttendance(
+  identifier: string
+): Promise<Registration | undefined> {
+  await initDb();
+  const clean = identifier.trim();
+  if (!clean) return undefined;
+
+  const cleanLower = clean.toLowerCase();
+  const numericOnly = clean.replace(/[\s\-\(\)\.]/g, "");
+
+  // 1. Direct match on email, reference_code, or exact phone
+  let result = await db.execute({
+    sql: `
+      SELECT * FROM registrations 
+      WHERE LOWER(email) = ? 
+         OR LOWER(reference_code) = ? 
+         OR phone = ?
+         OR REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', '') = ?
+      LIMIT 1
+    `,
+    args: [cleanLower, cleanLower, clean, numericOnly.replace(/^\+/, "")],
+  });
+
+  if (result.rows.length > 0) {
+    return result.rows[0] as unknown as Registration;
+  }
+
+  // 2. Fallback: phone suffix matching (e.g. last 8 digits)
+  if (numericOnly.length >= 7) {
+    const suffix = numericOnly.slice(-8);
+    result = await db.execute({
+      sql: `SELECT * FROM registrations WHERE phone LIKE ? LIMIT 1`,
+      args: [`%${suffix}%`],
+    });
+    if (result.rows.length > 0) {
+      return result.rows[0] as unknown as Registration;
+    }
+  }
+
+  return undefined;
+}
+
+export async function markRegistrationAttendance(
+  id: number,
+  method: string = "self"
+): Promise<Registration | undefined> {
+  await initDb();
+  await db.execute({
+    sql: `
+      UPDATE registrations 
+      SET attended = 1, 
+          checked_in_at = COALESCE(checked_in_at, CURRENT_TIMESTAMP), 
+          checkin_method = ? 
+      WHERE id = ?
+    `,
+    args: [method, id],
+  });
+
+  const result = await db.execute({
+    sql: "SELECT * FROM registrations WHERE id = ?",
+    args: [id],
+  });
+
+  if (result.rows.length === 0) return undefined;
+  return result.rows[0] as unknown as Registration;
+}
+
+export async function toggleRegistrationAttendance(
+  id: number,
+  attended: boolean,
+  method: string = "admin"
+): Promise<Registration | undefined> {
+  await initDb();
+  if (attended) {
+    await db.execute({
+      sql: `
+        UPDATE registrations 
+        SET attended = 1, 
+            checked_in_at = CURRENT_TIMESTAMP, 
+            checkin_method = ? 
+        WHERE id = ?
+      `,
+      args: [method, id],
+    });
+  } else {
+    await db.execute({
+      sql: `
+        UPDATE registrations 
+        SET attended = 0, 
+            checked_in_at = NULL 
+        WHERE id = ?
+      `,
+      args: [id],
+    });
+  }
+
+  const result = await db.execute({
+    sql: "SELECT * FROM registrations WHERE id = ?",
+    args: [id],
   });
 
   if (result.rows.length === 0) return undefined;
@@ -164,11 +292,12 @@ export async function getRegistrationByEmail(
 
 export async function getAllRegistrations(
   search?: string,
-  filterType?: string
+  filterType?: string,
+  attendanceFilter?: string
 ): Promise<Registration[]> {
   await initDb();
   let query = "SELECT * FROM registrations WHERE 1=1";
-  const args: string[] = [];
+  const args: any[] = [];
 
   if (search) {
     query +=
@@ -182,7 +311,13 @@ export async function getAllRegistrations(
     args.push(filterType);
   }
 
-  query += " ORDER BY created_at DESC";
+  if (attendanceFilter === "attended") {
+    query += " AND attended = 1";
+  } else if (attendanceFilter === "pending") {
+    query += " AND (attended = 0 OR attended IS NULL)";
+  }
+
+  query += " ORDER BY COALESCE(checked_in_at, created_at) DESC";
 
   const result = await db.execute({
     sql: query,
@@ -201,11 +336,28 @@ export async function getStats() {
   const virtualRes = await db.execute(
     "SELECT COUNT(*) as count FROM registrations WHERE attendance_type = 'virtual'"
   );
+  const attendedRes = await db.execute(
+    "SELECT COUNT(*) as count FROM registrations WHERE attended = 1"
+  );
+  const inPersonAttendedRes = await db.execute(
+    "SELECT COUNT(*) as count FROM registrations WHERE attended = 1 AND attendance_type = 'in-person'"
+  );
+  const virtualAttendedRes = await db.execute(
+    "SELECT COUNT(*) as count FROM registrations WHERE attended = 1 AND attendance_type = 'virtual'"
+  );
+
+  const total = Number(totalRes.rows[0]?.count || 0);
+  const attended = Number(attendedRes.rows[0]?.count || 0);
 
   return {
-    total: Number(totalRes.rows[0]?.count || 0),
+    total,
     inPerson: Number(inPersonRes.rows[0]?.count || 0),
     virtual: Number(virtualRes.rows[0]?.count || 0),
+    attended,
+    pending: Math.max(0, total - attended),
+    inPersonAttended: Number(inPersonAttendedRes.rows[0]?.count || 0),
+    virtualAttended: Number(virtualAttendedRes.rows[0]?.count || 0),
+    attendanceRate: total > 0 ? Math.round((attended / total) * 100) : 0,
   };
 }
 

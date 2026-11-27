@@ -27,6 +27,7 @@ import {
   X,
   ExternalLink,
   ChevronDown,
+  UserCheck,
 } from "lucide-react";
 import type { AdminJournalMember, JournalAdminStats } from "@/lib/adminJournal";
 
@@ -41,12 +42,20 @@ interface Registration {
   attendance_type: string;
   expectations: string;
   created_at: string;
+  attended?: number | boolean;
+  checked_in_at?: string | null;
+  checkin_method?: string | null;
 }
 
 interface Stats {
   total: number;
   inPerson: number;
   virtual: number;
+  attended?: number;
+  pending?: number;
+  inPersonAttended?: number;
+  virtualAttended?: number;
+  attendanceRate?: number;
 }
 
 export default function AdminPage() {
@@ -60,10 +69,11 @@ export default function AdminPage() {
 
   // Summit Registrations State
   const [registrations, setRegistrations] = useState<Registration[]>([]);
-  const [stats, setStats] = useState<Stats>({ total: 0, inPerson: 0, virtual: 0 });
+  const [stats, setStats] = useState<Stats>({ total: 0, inPerson: 0, virtual: 0, attended: 0, pending: 0, attendanceRate: 0 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const [attendanceFilter, setAttendanceFilter] = useState("all");
 
   // Journal Goals & Follow-Up State
   const [journalMembers, setJournalMembers] = useState<AdminJournalMember[]>([]);
@@ -92,6 +102,7 @@ export default function AdminPage() {
       const query = new URLSearchParams();
       if (search) query.set("search", search);
       if (filterType !== "all") query.set("type", filterType);
+      if (attendanceFilter !== "all") query.set("attendance", attendanceFilter);
 
       const res = await fetch(`/api/admin/registrations?${query.toString()}`);
       if (res.status === 401) {
@@ -102,7 +113,7 @@ export default function AdminPage() {
       if (res.ok) {
         const data = await res.json();
         setRegistrations(data.registrations || []);
-        setStats(data.stats || { total: 0, inPerson: 0, virtual: 0 });
+        setStats(data.stats || { total: 0, inPerson: 0, virtual: 0, attended: 0, pending: 0, attendanceRate: 0 });
         setIsAuthenticated(true);
       }
     } catch (err) {
@@ -110,7 +121,7 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, filterType]);
+  }, [search, filterType, attendanceFilter]);
 
   // 2. Fetch Journal Goals
   const fetchJournalGoals = useCallback(async () => {
@@ -195,8 +206,27 @@ export default function AdminPage() {
     const query = new URLSearchParams();
     if (search) query.set("search", search);
     if (filterType !== "all") query.set("type", filterType);
+    if (attendanceFilter !== "all") query.set("attendance", attendanceFilter);
     query.set("export", "csv");
     window.open(`/api/admin/registrations?${query.toString()}`, "_blank");
+  };
+
+  const handleToggleAttendance = async (id: number, currentAttended: boolean) => {
+    try {
+      const res = await fetch("/api/admin/attendance/toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, attended: !currentAttended }),
+      });
+      if (res.ok) {
+        fetchRegistrations();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to toggle attendance");
+      }
+    } catch (err) {
+      console.error("Failed to toggle attendance:", err);
+    }
   };
 
   const handleExportJournalCSV = () => {
@@ -409,7 +439,7 @@ export default function AdminPage() {
               {adminSection === "registrations" && (
                 <div className="space-y-6">
                   {/* Stats Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                     <div className="p-6 rounded-2xl bg-emerald-900/60 border border-emerald-800 space-y-2">
                       <div className="flex items-center justify-between text-emerald-300 text-xs font-bold uppercase">
                         <span>Total Registered</span>
@@ -421,11 +451,13 @@ export default function AdminPage() {
 
                     <div className="p-6 rounded-2xl bg-emerald-900/60 border border-emerald-800 space-y-2">
                       <div className="flex items-center justify-between text-emerald-300 text-xs font-bold uppercase">
-                        <span>In-Person (Eridan Space)</span>
+                        <span>In-Person</span>
                         <MapPin className="w-4 h-4 text-amber-400" />
                       </div>
                       <p className="text-3xl font-black text-amber-300">{stats.inPerson}</p>
-                      <p className="text-[11px] text-emerald-200">Attending Ikeja, Lagos</p>
+                      <p className="text-[11px] text-emerald-200">
+                        {stats.inPersonAttended !== undefined ? `${stats.inPersonAttended} checked in` : "Ikeja, Lagos"}
+                      </p>
                     </div>
 
                     <div className="p-6 rounded-2xl bg-emerald-900/60 border border-emerald-800 space-y-2">
@@ -434,7 +466,25 @@ export default function AdminPage() {
                         <Globe className="w-4 h-4 text-emerald-300" />
                       </div>
                       <p className="text-3xl font-black text-emerald-300">{stats.virtual}</p>
-                      <p className="text-[11px] text-emerald-200">Attending Online Stream</p>
+                      <p className="text-[11px] text-emerald-200">
+                        {stats.virtualAttended !== undefined ? `${stats.virtualAttended} checked in` : "Online Stream"}
+                      </p>
+                    </div>
+
+                    <div className="p-6 rounded-2xl bg-emerald-900/60 border border-emerald-700/80 space-y-2 ring-1 ring-emerald-500/30">
+                      <div className="flex items-center justify-between text-emerald-300 text-xs font-bold uppercase">
+                        <span>Checked In</span>
+                        <UserCheck className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <p className="text-3xl font-black text-emerald-400">
+                        {stats.attended ?? 0}{" "}
+                        <span className="text-sm font-semibold text-emerald-300">
+                          ({stats.attendanceRate ?? 0}%)
+                        </span>
+                      </p>
+                      <p className="text-[11px] text-emerald-200">
+                        {stats.pending ?? 0} pending arrival
+                      </p>
                     </div>
                   </div>
 
@@ -451,17 +501,42 @@ export default function AdminPage() {
                       />
                     </div>
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                      <span className="text-xs text-emerald-200 font-bold">Filter:</span>
-                      <select
-                        value={filterType}
-                        onChange={(e) => setFilterType(e.target.value)}
-                        className="bg-emerald-950 border border-emerald-800 text-xs text-white rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400"
+                    <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-emerald-200 font-bold">Type:</span>
+                        <select
+                          value={filterType}
+                          onChange={(e) => setFilterType(e.target.value)}
+                          className="bg-emerald-950 border border-emerald-800 text-xs text-white rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400"
+                        >
+                          <option value="all">All Modes</option>
+                          <option value="in-person">In-Person Only</option>
+                          <option value="virtual">Virtual Only</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-emerald-200 font-bold">Status:</span>
+                        <select
+                          value={attendanceFilter}
+                          onChange={(e) => setAttendanceFilter(e.target.value)}
+                          className="bg-emerald-950 border border-emerald-800 text-xs text-white rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400"
+                        >
+                          <option value="all">All Status</option>
+                          <option value="attended">Checked In (Attended)</option>
+                          <option value="pending">Pending Check-In</option>
+                        </select>
+                      </div>
+
+                      <Link
+                        href="/attendance"
+                        target="_blank"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-emerald-950 bg-emerald-400 hover:bg-emerald-300 transition-colors"
                       >
-                        <option value="all">All Registrations</option>
-                        <option value="in-person">In-Person Only</option>
-                        <option value="virtual">Virtual Only</option>
-                      </select>
+                        <UserCheck className="w-3.5 h-3.5" />
+                        <span>Open Check-In Desk</span>
+                        <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />
+                      </Link>
                     </div>
                   </div>
 
@@ -474,9 +549,9 @@ export default function AdminPage() {
                             <th className="py-3.5 px-4">Ref Code</th>
                             <th className="py-3.5 px-4">Full Name</th>
                             <th className="py-3.5 px-4">Contact Info</th>
-                            <th className="py-3.5 px-4">Occupation / Location</th>
-                            <th className="py-3.5 px-4">Expectations</th>
-                            <th className="py-3.5 px-4">Attendance</th>
+                            <th className="py-3.5 px-4">Mode</th>
+                            <th className="py-3.5 px-4">Attendance Status</th>
+                            <th className="py-3.5 px-4">Check-In Action</th>
                             <th className="py-3.5 px-4">Date Registered</th>
                           </tr>
                         </thead>
@@ -503,20 +578,12 @@ export default function AdminPage() {
                                   {reg.reference_code}
                                 </td>
                                 <td className="py-3.5 px-4 font-bold text-white">
-                                  {reg.full_name}
+                                  <div>{reg.full_name}</div>
+                                  <div className="text-[11px] text-emerald-400 font-normal">{reg.occupation || reg.city_country || ""}</div>
                                 </td>
                                 <td className="py-3.5 px-4 space-y-0.5">
                                   <div className="text-emerald-100">{reg.email}</div>
                                   <div className="text-emerald-400 text-[11px]">{reg.phone}</div>
-                                </td>
-                                <td className="py-3.5 px-4 space-y-0.5">
-                                  <div className="text-emerald-100">{reg.occupation || "N/A"}</div>
-                                  <div className="text-emerald-400 text-[11px]">{reg.city_country || "N/A"}</div>
-                                </td>
-                                <td className="py-3.5 px-4">
-                                  <div className="text-emerald-200 max-w-xs truncate" title={reg.expectations || "N/A"}>
-                                    {reg.expectations || "N/A"}
-                                  </div>
                                 </td>
                                 <td className="py-3.5 px-4">
                                   <span
@@ -526,8 +593,41 @@ export default function AdminPage() {
                                         : "bg-emerald-950 text-emerald-200 border border-emerald-700"
                                     }`}
                                   >
-                                    {reg.attendance_type === "in-person" ? "In-Person (Ikeja)" : "Virtual"}
+                                    {reg.attendance_type === "in-person" ? "In-Person" : "Virtual"}
                                   </span>
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  {Boolean(reg.attended) ? (
+                                    <div className="space-y-0.5">
+                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                        Checked In
+                                      </span>
+                                      {reg.checked_in_at && (
+                                        <p className="text-[10px] text-emerald-300">
+                                          {new Date(reg.checked_in_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({reg.checkin_method || "self"})
+                                        </p>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold text-emerald-300 bg-emerald-950/80 border border-emerald-800">
+                                      Pending
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <button
+                                    onClick={() => handleToggleAttendance(reg.id, Boolean(reg.attended))}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                      Boolean(reg.attended)
+                                        ? "bg-emerald-950/80 text-emerald-300 hover:text-red-300 border border-emerald-800 hover:border-red-500/40"
+                                        : "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40"
+                                    }`}
+                                    title={Boolean(reg.attended) ? "Click to undo check-in" : "Mark as checked in"}
+                                  >
+                                    <UserCheck className="w-3.5 h-3.5" />
+                                    <span>{Boolean(reg.attended) ? "Undo" : "Mark Present"}</span>
+                                  </button>
                                 </td>
                                 <td className="py-3.5 px-4 text-emerald-300 whitespace-nowrap">
                                   {reg.created_at ? new Date(reg.created_at).toLocaleDateString() : "N/A"}

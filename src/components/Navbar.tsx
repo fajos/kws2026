@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, ArrowRight, BookOpen } from "lucide-react";
+import { Menu, X, ArrowRight, BookOpen, UserCheck } from "lucide-react";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -51,6 +51,13 @@ export default function Navbar() {
             </Link>
             <Link href="/#venue" className="hover:text-amber-300 transition-colors">
               Venue
+            </Link>
+            <Link
+              href="/attendance"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-800 text-emerald-100 border border-emerald-600 hover:bg-emerald-700 hover:text-white transition-all font-semibold"
+            >
+              <UserCheck className="w-3.5 h-3.5 text-amber-400" />
+              <span>Event Check-In</span>
             </Link>
             <Link
               href="/journal"
@@ -123,6 +130,14 @@ export default function Navbar() {
               className="hover:text-amber-300 py-1"
             >
               Venue &amp; Location
+            </Link>
+            <Link
+              href="/attendance"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-white font-bold py-1.5 bg-emerald-900 px-3 rounded-lg border border-emerald-700"
+            >
+              <UserCheck className="w-4 h-4 text-amber-400" />
+              <span>Event Check-In (Attendance)</span>
             </Link>
             <Link
               href="/journal"

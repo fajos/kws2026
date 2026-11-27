@@ -18,9 +18,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || undefined;
     const filterType = searchParams.get("type") || undefined;
+    const attendanceFilter = searchParams.get("attendance") || undefined;
     const exportFormat = searchParams.get("export");
 
-    const registrations = await getAllRegistrations(search, filterType);
+    const registrations = await getAllRegistrations(search, filterType, attendanceFilter);
     const stats = await getStats();
 
     if (exportFormat === "csv") {
@@ -29,9 +30,12 @@ export async function GET(request: Request) {
         "Full Name",
         "Email",
         "Phone",
+        "Attendance Status",
+        "Check-In Time",
+        "Check-In Method",
+        "Attendance Type",
         "Occupation",
         "Location",
-        "Attendance Type",
         "Expectations",
         "Date Registered",
       ];
@@ -43,9 +47,12 @@ export async function GET(request: Request) {
             `"${(r.full_name || "").replace(/"/g, '""')}"`,
             `"${(r.email || "").replace(/"/g, '""')}"`,
             `"${(r.phone || "").replace(/"/g, '""')}"`,
+            `"${r.attended ? "Attended" : "Not Checked In"}"`,
+            `"${r.checked_in_at || "N/A"}"`,
+            `"${r.checkin_method || "N/A"}"`,
+            `"${r.attendance_type}"`,
             `"${(r.occupation || "").replace(/"/g, '""')}"`,
             `"${(r.city_country || "").replace(/"/g, '""')}"`,
-            `"${r.attendance_type}"`,
             `"${(r.expectations || "").replace(/"/g, '""')}"`,
             `"${r.created_at || ""}"`,
           ].join(",")
@@ -55,8 +62,8 @@ export async function GET(request: Request) {
       const csvString = csvRows.join("\n");
       return new Response(csvString, {
         headers: {
-          "Content-Type": "text/csv",
-          "Content-Disposition": 'attachment; filename="kws2026_registrations.csv"',
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": 'attachment; filename="kws2026_registrations_attendance.csv"',
         },
       });
     }
