@@ -821,9 +821,16 @@ export default function AdminPage() {
                     className="p-4 rounded-2xl bg-emerald-950/70 border border-emerald-800 space-y-2.5"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-400/20 text-amber-300 border border-amber-400/40">
-                        {goal.area}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                          {goal.area}
+                        </span>
+                        {goal.isCustom && (
+                          <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
+                            Custom Area
+                          </span>
+                        )}
+                      </div>
                       {goal.isTopThree && (
                         <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
                           ★ Top 3 Focus
@@ -849,24 +856,71 @@ export default function AdminPage() {
                       <div className="pt-2 border-t border-emerald-900 grid grid-cols-2 gap-2 text-[11px]">
                         {goal.milestones.q1 && (
                           <div className="p-2 rounded-lg bg-emerald-900/60">
-                            <span className="font-bold text-amber-300">Q1:</span> {goal.milestones.q1}
+                            <span className="font-bold text-amber-300">Q1 Milestone:</span> {goal.milestones.q1}
                           </div>
                         )}
                         {goal.milestones.q2 && (
                           <div className="p-2 rounded-lg bg-emerald-900/60">
-                            <span className="font-bold text-amber-300">Q2:</span> {goal.milestones.q2}
+                            <span className="font-bold text-amber-300">Q2 Milestone:</span> {goal.milestones.q2}
                           </div>
                         )}
                         {goal.milestones.q3 && (
                           <div className="p-2 rounded-lg bg-emerald-900/60">
-                            <span className="font-bold text-amber-300">Q3:</span> {goal.milestones.q3}
+                            <span className="font-bold text-amber-300">Q3 Milestone:</span> {goal.milestones.q3}
                           </div>
                         )}
                         {goal.milestones.q4 && (
                           <div className="p-2 rounded-lg bg-emerald-900/60">
-                            <span className="font-bold text-amber-300">Q4:</span> {goal.milestones.q4}
+                            <span className="font-bold text-amber-300">Q4 Milestone:</span> {goal.milestones.q4}
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {goal.quarterlyTargets && Object.keys(goal.quarterlyTargets).length > 0 && (
+                      <div className="pt-2 border-t border-emerald-900 space-y-1.5">
+                        <div className="text-[10.5px] font-bold uppercase tracking-wider text-amber-300">
+                          Quarterly Targets (Month 1, 2, 3 Breakdown):
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
+                          {Object.entries(goal.quarterlyTargets).map(([qKey, targets]) => (
+                            <div key={qKey} className="p-2 rounded-lg bg-emerald-900/40 border border-emerald-800/60">
+                              <span className="font-bold text-amber-400 uppercase">{qKey.toUpperCase()}:</span>
+                              <ul className="list-disc list-inside mt-0.5 text-emerald-100 space-y-0.5">
+                                {targets.map((t, tIdx) => (
+                                  <li key={tIdx} className="line-clamp-2">{t}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {goal.monthlyGoals && goal.monthlyGoals.length > 0 && (
+                      <div className="pt-2 border-t border-emerald-900 space-y-1.5">
+                        <div className="text-[10.5px] font-bold uppercase tracking-wider text-emerald-300">
+                          Monthly Key Goals &amp; Tasks:
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
+                          {goal.monthlyGoals.map((mg, mgIdx) => (
+                            <div key={mgIdx} className="p-2 rounded-lg bg-emerald-900/40 border border-emerald-800/60 space-y-1">
+                              <span className="font-bold text-emerald-300">{mg.monthName}</span>
+                              {mg.keyGoals.length > 0 && (
+                                <ul className="list-disc list-inside text-emerald-100">
+                                  {mg.keyGoals.map((kg, kgIdx) => (
+                                    <li key={kgIdx} className="line-clamp-2">{kg}</li>
+                                  ))}
+                                </ul>
+                              )}
+                              {mg.todos.length > 0 && (
+                                <div className="text-[10px] text-emerald-300 italic">
+                                  {mg.todos.length} to-do item{mg.todos.length > 1 ? 's' : ''}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

@@ -464,7 +464,7 @@ export default function JournalPage() {
     setJournalState(newState);
     localStorage.setItem("kws_journal_local_state", JSON.stringify(newState));
 
-    if (!token || !user?.is_pro) {
+    if (!token) {
       setSyncStatus("offline");
       return;
     }

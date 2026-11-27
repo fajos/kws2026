@@ -18,17 +18,6 @@ export async function GET(request: Request) {
       return jsonResponse({ error: "Unauthorized. Please log in." }, 401);
     }
 
-    const isPro = await isJournalUserPro(auth.userId, auth.email);
-    if (!isPro) {
-      return jsonResponse(
-        {
-          error: "Multi-Device Cloud Sync requires an active FRA Journal Pro subscription.",
-          requires_pro: true,
-        },
-        403
-      );
-    }
-
     const { searchParams } = new URL(request.url);
     const yearParam = searchParams.get("year");
     const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
@@ -62,17 +51,6 @@ export async function POST(request: Request) {
     const auth = getUserFromRequest(request);
     if (!auth) {
       return jsonResponse({ error: "Unauthorized. Please log in." }, 401);
-    }
-
-    const isPro = await isJournalUserPro(auth.userId, auth.email);
-    if (!isPro) {
-      return jsonResponse(
-        {
-          error: "Multi-Device Cloud Sync requires an active FRA Journal Pro subscription.",
-          requires_pro: true,
-        },
-        403
-      );
     }
 
     const body = await request.json();

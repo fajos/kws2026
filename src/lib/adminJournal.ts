@@ -4,9 +4,23 @@ export interface AdminJournalGoalItem {
   area: string;
   text: string;
   isTopThree: boolean;
+  priority?: number;
+  isCustom?: boolean;
   whyItMatters?: string;
   supportNeeded?: string;
   milestones?: { q1?: string; q2?: string; q3?: string; q4?: string };
+  quarterlyTargets?: {
+    q1?: string[];
+    q2?: string[];
+    q3?: string[];
+    q4?: string[];
+  };
+  monthlyGoals?: {
+    monthIndex: number;
+    monthName: string;
+    keyGoals: string[];
+    todos: string[];
+  }[];
 }
 
 export interface AdminJournalMember {
@@ -81,22 +95,126 @@ export async function getAdminJournalMembers(
     if (row.entry_data) {
       try {
         const parsed = JSON.parse(row.entry_data);
-        const goalsObj = parsed.goals || {};
+        // Look for goals in target year: either parsed.goals or parsed.yearsData?.[year]
+        const goalsObj =
+          (parsed.year === year && parsed.goals)
+            ? parsed.goals
+            : (parsed.yearsData?.[year] || parsed.goals || {});
 
         for (const [area, goal] of Object.entries(goalsObj) as [string, any][]) {
-          if (goal && typeof goal.text === "string" && goal.text.trim().length > 0) {
+          if (!goal) continue;
+
+          // Extract primary text
+          let primaryText = typeof goal.text === "string" ? goal.text.trim() : "";
+
+          // Extract quarterly targets (month 1, 2, 3 targets)
+          const quarterlyTargets: { [q: string]: string[] } = {};
+          let totalQuarterlyTargets = 0;
+          if (goal.quarterPlans && typeof goal.quarterPlans === "object") {
+            for (const qNum of [1, 2, 3, 4]) {
+              const qPlan = goal.quarterPlans[qNum];
+              if (qPlan) {
+                const qItems: string[] = [];
+                for (const mKey of ["month1", "month2", "month3"]) {
+                  if (Array.isArray(qPlan[mKey])) {
+                    qPlan[mKey].forEach((it: any) => {
+                      if (it && typeof it.text === "string" && it.text.trim()) {
+                        qItems.push(it.text.trim());
+                      }
+                    });
+                  }
+                }
+                if (qItems.length > 0) {
+                  quarterlyTargets[`q${qNum}`] = qItems;
+                  totalQuarterlyTargets += qItems.length;
+                }
+              }
+            }
+          }
+
+          // Extract monthly key goals & todos
+          const monthlyGoals: { monthIndex: number; monthName: string; keyGoals: string[]; todos: string[] }[] = [];
+          if (goal.monthPlans && typeof goal.monthPlans === "object") {
+            for (let m = 1; m <= 12; m++) {
+              const mPlan = goal.monthPlans[m];
+              if (mPlan) {
+                const kGoals: string[] = [];
+                const todos: string[] = [];
+                if (Array.isArray(mPlan.keyGoals)) {
+                  mPlan.keyGoals.forEach((it: any) => {
+                    if (it && typeof it.text === "string" && it.text.trim()) {
+                      kGoals.push(it.text.trim());
+                    }
+                  });
+                }
+                if (Array.isArray(mPlan.todos)) {
+                  mPlan.todos.forEach((it: any) => {
+                    if (it && typeof it.text === "string" && it.text.trim()) {
+                      todos.push(it.text.trim());
+                    }
+                  });
+                }
+                if (kGoals.length > 0 || todos.length > 0) {
+                  monthlyGoals.push({
+                    monthIndex: m,
+                    monthName: mPlan.monthName || `Month ${m}`,
+                    keyGoals: kGoals,
+                    todos,
+                  });
+                }
+              }
+            }
+          }
+
+          const hasMilestones = Boolean(
+            goal.milestones &&
+              (goal.milestones.q1?.trim() ||
+                goal.milestones.q2?.trim() ||
+                goal.milestones.q3?.trim() ||
+                goal.milestones.q4?.trim())
+          );
+          const hasWhyOrSupport = Boolean(goal.whyItMatters?.trim() || goal.supportNeeded?.trim());
+          const isExplicitCustom = Boolean(goal.isCustom);
+
+          // If primary text is empty but user added milestones or targets, synthesize a meaningful summary
+          if (!primaryText) {
+            if (goal.milestones?.q1?.trim()) {
+              primaryText = goal.milestones.q1.trim();
+            } else if (quarterlyTargets.q1 && quarterlyTargets.q1.length > 0) {
+              primaryText = quarterlyTargets.q1[0];
+            } else if (monthlyGoals.length > 0 && monthlyGoals[0].keyGoals.length > 0) {
+              primaryText = monthlyGoals[0].keyGoals[0];
+            } else if (isExplicitCustom) {
+              primaryText = `${area} (Custom focus area)`;
+            } else if (hasWhyOrSupport) {
+              primaryText = goal.whyItMatters?.trim() || `[${area}] Focus area set`;
+            }
+          }
+
+          // A goal counts if primaryText exists, or it has milestones, quarterly targets, monthly goals, or is a custom goal
+          if (
+            primaryText ||
+            isExplicitCustom ||
+            hasMilestones ||
+            totalQuarterlyTargets > 0 ||
+            monthlyGoals.length > 0
+          ) {
             hasGoals = true;
             const item: AdminJournalGoalItem = {
               area,
-              text: goal.text.trim(),
+              text: primaryText || `[${area}] Focus area set`,
               isTopThree: !!goal.isTopThree,
+              priority: goal.priority || 2,
+              isCustom: isExplicitCustom,
               whyItMatters: goal.whyItMatters || "",
               supportNeeded: goal.supportNeeded || "",
               milestones: goal.milestones || {},
+              quarterlyTargets: Object.keys(quarterlyTargets).length > 0 ? quarterlyTargets : undefined,
+              monthlyGoals: monthlyGoals.length > 0 ? monthlyGoals : undefined,
             };
             allGoals.push(item);
             if (goal.isTopThree) {
-              topThree.push({ area, text: goal.text.trim() });
+              topThree.push({ area, text: item.text });
             }
           }
         }
