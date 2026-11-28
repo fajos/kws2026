@@ -2661,7 +2661,7 @@ export default function JournalPage() {
                   <div>
                     <div className="font-bold text-amber-500">FRA Journal Pro Feature</div>
                     <p className="text-[11px] opacity-80 leading-relaxed mt-0.5">
-                      Scheduled automated check-ins require an active FRA Journal Pro subscription or complimentary Kingdom Wealth Summit attendee membership.
+                      Scheduled automated check-ins require an active FRA Journal Pro subscription. Subscribe in the mobile app and log in here with the same email.
                     </p>
                   </div>
                 </div>
@@ -2798,7 +2798,7 @@ export default function JournalPage() {
                       FRA Journal Pro Feature
                     </div>
                     <p className="text-[11px] opacity-80 leading-relaxed">
-                      AI Goal Decomposition requires an active FRA Journal Pro subscription or complimentary Kingdom Wealth Summit attendee membership.
+                      AI Goal Decomposition requires an active FRA Journal Pro subscription. Subscribe in the mobile app and log in here with the same email to unlock Pro.
                     </p>
                     <button
                       type="button"
@@ -3254,16 +3254,17 @@ export default function JournalPage() {
               </div>
 
               {/* How to Unlock Pro */}
-              <div className="p-4 rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-400/10 via-amber-400/5 to-transparent space-y-2">
+              <div className="p-4 rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-400/10 via-amber-400/5 to-transparent space-y-2.5">
                 <div className="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
-                  <span>How to Unlock FRA Journal Pro</span>
+                  <Smartphone className="w-4 h-4 text-amber-500" />
+                  <span>How to Unlock FRA Journal Pro ($6.99/year)</span>
                 </div>
-                <div className="text-xs opacity-85 space-y-2 leading-relaxed">
+                <div className="text-xs opacity-90 space-y-2 leading-relaxed">
                   <p>
-                    <strong>1. Kingdom Wealth Summit Attendees:</strong> You receive complimentary full Pro access! Simply log in with your Summit registration email.
+                    <strong>1. Subscribe on Mobile App:</strong> Download the <strong>FRA E-Journal</strong> app on the App Store (iOS) or Google Play (Android) and subscribe to Pro.
                   </p>
                   <p>
-                    <strong>2. Mobile App Subscription ($6.99/year):</strong> Subscribe inside the FRA E-Journal mobile app (Google Play / App Store). Sign into your web journal with the same email to unlock Pro here automatically.
+                    <strong>2. Access on Web:</strong> Log in to this web journal with the <strong>same email address</strong> you used in the mobile app. Your Pro access (AI goal decomposition, real-time Cloud Sync, and Email Reminders) will unlock automatically across all your devices!
                   </p>
                 </div>
               </div>
@@ -3281,9 +3282,9 @@ export default function JournalPage() {
                   className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 ${primaryBg}`}
                 >
                   <User className="w-3.5 h-3.5" />
-                  <span>Sign In with Summit or Pro Account</span>
+                  <span>Sign In with Your Account</span>
                 </button>
-              ) : !user?.is_kws_member ? (
+              ) : (
                 <button
                   type="button"
                   onClick={() => {
@@ -3294,13 +3295,13 @@ export default function JournalPage() {
                   }}
                   className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border ${pillLight}`}
                 >
-                  <span>Switch to Summit Registration Email</span>
+                  <span>Switch Account / Re-login</span>
                 </button>
-              ) : null}
+              )}
               <button
                 type="button"
                 onClick={() => setShowProModal(false)}
-                className={`w-full ${!token || !user?.is_kws_member ? "sm:w-32" : ""} py-2.5 rounded-xl text-xs font-bold border ${pillLight} hover:opacity-80 transition-opacity`}
+                className={`w-full ${!token ? "sm:w-32" : ""} py-2.5 rounded-xl text-xs font-bold border ${pillLight} hover:opacity-80 transition-opacity`}
               >
                 Close
               </button>
