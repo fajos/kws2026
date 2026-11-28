@@ -40,6 +40,7 @@ import {
   Cloud,
   Lock,
   Smartphone,
+  CreditCard,
 } from "lucide-react";
 import { getWeeksForMonth } from "@/lib/journalCalendar";
 
@@ -401,6 +402,11 @@ export default function JournalPage() {
   const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
   const [deleteAccountError, setDeleteAccountError] = useState("");
 
+  // Paystack Web Checkout
+  const [paystackLoading, setPaystackLoading] = useState(false);
+  const [paystackError, setPaystackError] = useState("");
+  const [paymentSuccessMsg, setPaymentSuccessMsg] = useState("");
+
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 1. Initial Load: Check token & require authentication
@@ -414,7 +420,71 @@ export default function JournalPage() {
     } else {
       setAuthChecking(false);
     }
+
+    // Check for Paystack redirect query params: ?payment=verify&reference=...
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const reference = urlParams.get("reference");
+      const paymentAction = urlParams.get("payment");
+
+      if (paymentAction === "verify" && reference) {
+        verifyPaystackPayment(reference);
+      }
+    }
   }, []);
+
+  async function verifyPaystackPayment(ref: string) {
+    try {
+      const res = await fetch(`/api/journal/paystack/verify?reference=${encodeURIComponent(ref)}`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPaymentSuccessMsg("Payment successful! FRA Journal Pro has been activated on your account.");
+        const savedToken = localStorage.getItem("kws_journal_token") || "";
+        if (savedToken) {
+          fetchUserProfile(savedToken);
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else {
+        setPaystackError(data.error || "Payment verification could not be completed.");
+      }
+    } catch (err) {
+      console.error("Verification error:", err);
+      setPaystackError("Failed to verify Paystack transaction.");
+    }
+  }
+
+  async function handlePaystackCheckout() {
+    if (!token) {
+      setShowProModal(false);
+      setAuthMode("login");
+      setShowAuthModal(true);
+      return;
+    }
+    setPaystackLoading(true);
+    setPaystackError("");
+
+    try {
+      const res = await fetch("/api/journal/paystack/initialize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Could not initialize Paystack checkout.");
+      }
+
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      }
+    } catch (err: any) {
+      setPaystackError(err.message || "Failed to launch Paystack checkout.");
+      setPaystackLoading(false);
+    }
+  }
 
   // 2. Fetch User Profile
   async function fetchUserProfile(jwt: string) {
@@ -998,6 +1068,27 @@ export default function JournalPage() {
           </button>
         </header>
 
+      {/* Payment Success Toast / Banner */}
+      {paymentSuccessMsg && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 animate-fadeIn">
+          <div className="p-4 rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/40 text-emerald-300 flex items-center justify-between shadow-xl">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
+              <div>
+                <h4 className="font-bold text-sm text-white">FRA Journal Pro Activated!</h4>
+                <p className="text-xs text-emerald-200 mt-0.5">{paymentSuccessMsg}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setPaymentSuccessMsg("")}
+              className="p-1 rounded-full hover:bg-emerald-500/20 text-emerald-400 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
         {/* Main Auth Card */}
         <div className="flex-1 flex items-center justify-center p-4">
           <div className={`w-full max-w-md p-6 sm:p-8 rounded-3xl border shadow-2xl ${cardBg}`}>
@@ -1291,6 +1382,27 @@ export default function JournalPage() {
           </div>
         </div>
       </header>
+
+      {/* Payment Success Toast / Banner */}
+      {paymentSuccessMsg && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 animate-fadeIn">
+          <div className="p-4 rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/40 text-emerald-300 flex items-center justify-between shadow-xl">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
+              <div>
+                <h4 className="font-bold text-sm text-white">FRA Journal Pro Activated!</h4>
+                <p className="text-xs text-emerald-200 mt-0.5">{paymentSuccessMsg}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setPaymentSuccessMsg("")}
+              className="p-1 rounded-full hover:bg-emerald-500/20 text-emerald-400 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ------------------------------------------------------------- */}
       {/* Sub-Header & Navigation Tabs                                  */}
@@ -3254,17 +3366,69 @@ export default function JournalPage() {
               </div>
 
               {/* How to Unlock Pro */}
-              <div className="p-4 rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-400/10 via-amber-400/5 to-transparent space-y-2.5">
-                <div className="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
-                  <Smartphone className="w-4 h-4 text-amber-500" />
-                  <span>How to Unlock FRA Journal Pro ($6.99/year)</span>
+              <div className="p-4 rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-400/10 via-amber-400/5 to-transparent space-y-3">
+                <div className="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Crown className="w-4 h-4 text-amber-500" />
+                    <span>Unlock FRA Journal Pro (Annual Access)</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    Works on Web + Mobile
+                  </span>
                 </div>
-                <div className="text-xs opacity-90 space-y-2 leading-relaxed">
-                  <p>
-                    <strong>1. Subscribe on Mobile App:</strong> Download the <strong>FRA E-Journal</strong> app on the App Store (iOS) or Google Play (Android) and subscribe to Pro.
-                  </p>
-                  <p>
-                    <strong>2. Access on Web:</strong> Log in to this web journal with the <strong>same email address</strong> you used in the mobile app. Your Pro access (AI goal decomposition, real-time Cloud Sync, and Email Reminders) will unlock automatically across all your devices!
+
+                {paystackError && (
+                  <div className="p-3 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-xs">
+                    {paystackError}
+                  </div>
+                )}
+
+                {/* Option 1: Instant Web Checkout with Paystack */}
+                <div className="p-3.5 rounded-xl bg-slate-900/60 dark:bg-black/40 border border-amber-400/40 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Instant Web Checkout (Paystack)</span>
+                      </div>
+                      <p className="text-[11px] opacity-75 mt-0.5">
+                        Pay with Card, Bank Transfer, USSD, or Apple Pay.
+                      </p>
+                    </div>
+                    <span className="text-sm font-extrabold text-amber-400 whitespace-nowrap">
+                      ₦10,000 <span className="text-[10px] font-normal opacity-70">/yr</span>
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={paystackLoading}
+                    onClick={handlePaystackCheckout}
+                    className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-linear-to-r from-amber-400 via-yellow-300 to-amber-400 text-emerald-950 hover:brightness-105 transition-all shadow-md flex items-center justify-center gap-2"
+                  >
+                    {paystackLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-emerald-950" />
+                        <span>Connecting to Paystack...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4 text-emerald-950" />
+                        <span>Subscribe on Web with Paystack (₦10,000)</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Option 2: Mobile App In-App Purchase */}
+                <div className="pt-1 text-xs opacity-85 space-y-1">
+                  <div className="font-bold flex items-center gap-1.5 text-slate-200">
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>Or Subscribe on Mobile App ($6.99/year)</span>
+                  </div>
+                  <p className="text-[11px] opacity-75 leading-relaxed pl-5">
+                    Subscribe inside the <strong>FRA E-Journal</strong> app on Google Play or App Store. Log in with the exact same email address on web, and your Pro version unlocks here automatically!
                   </p>
                 </div>
               </div>

@@ -495,14 +495,9 @@ export async function getJournalSubscription(userId: number): Promise<JournalSub
   };
 }
 
-export async function isJournalUserPro(userId: number, email?: string): Promise<boolean> {
+export async function isJournalUserPro(userId: number, _email?: string): Promise<boolean> {
   await initDb();
-  // 1. If email is provided, check if user is a Kingdom Wealth Summit attendee
-  if (email) {
-    const reg = await getRegistrationByEmail(email);
-    if (reg) return true;
-  }
-  // 2. Check active subscription record
+  // Check active subscription record
   const sub = await getJournalSubscription(userId);
   if (!sub) return false;
 
