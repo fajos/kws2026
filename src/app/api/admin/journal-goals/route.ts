@@ -33,7 +33,7 @@ export async function GET(request: Request) {
         "Email",
         "Target Year",
         "Total Goals Set",
-        "Top 3 Goals",
+        "All Goals Set",
         "Email Reminders",
         "Reminder Schedule",
         "Last Journal Update",
@@ -43,9 +43,12 @@ export async function GET(request: Request) {
       const csvRows = [
         headers.join(","),
         ...members.map((m) => {
-          const topGoalsSummary = m.top_three_goals
-            .map((g) => `[${g.area}] ${g.text}`)
-            .join(" | ");
+          const allGoalsSummary =
+            m.all_goals && m.all_goals.length > 0
+              ? m.all_goals
+                  .map((g) => `[${g.area}${g.isTopThree ? " (Top 3)" : ""}] ${g.text}`)
+                  .join(" | ")
+              : m.top_three_goals.map((g) => `[${g.area}] ${g.text}`).join(" | ");
 
           return [
             `"${m.id}"`,
@@ -53,7 +56,7 @@ export async function GET(request: Request) {
             `"${(m.email || "").replace(/"/g, '""')}"`,
             `"${m.entry_year || year}"`,
             `"${m.total_goals_count}"`,
-            `"${topGoalsSummary.replace(/"/g, '""')}"`,
+            `"${allGoalsSummary.replace(/"/g, '""')}"`,
             `"${m.reminder_frequency}"`,
             `"${m.reminder_day || "N/A"}"`,
             `"${m.entry_updated_at || "Never"}"`,

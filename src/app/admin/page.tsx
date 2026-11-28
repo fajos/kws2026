@@ -736,7 +736,7 @@ export default function AdminPage() {
                           <tr>
                             <th className="py-3.5 px-4">Member Name &amp; Email</th>
                             <th className="py-3.5 px-4">Goal Status</th>
-                            <th className="py-3.5 px-4">Top Focus Goals ({journalYear})</th>
+                            <th className="py-3.5 px-4">All Goals Set ({journalYear})</th>
                             <th className="py-3.5 px-4">Reminders</th>
                             <th className="py-3.5 px-4">Last Activity</th>
                             <th className="py-3.5 px-4 text-right">Follow-Up Actions</th>
@@ -794,15 +794,35 @@ export default function AdminPage() {
                                   )}
                                 </td>
 
-                                <td className="py-3.5 px-4 max-w-md">
-                                  {member.top_three_goals.length > 0 ? (
-                                    <div className="space-y-1.5">
-                                      {member.top_three_goals.map((g, idx) => (
+                                <td className="py-3.5 px-4 max-w-lg">
+                                  {member.all_goals && member.all_goals.length > 0 ? (
+                                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                                      {member.all_goals.map((g, idx) => (
                                         <div key={idx} className="flex items-start gap-1.5 text-xs">
-                                          <span className="shrink-0 px-1.5 py-0.5 rounded text-[9.5px] font-bold uppercase bg-emerald-950 text-amber-300 border border-amber-400/30">
+                                          <span
+                                            className={`shrink-0 px-1.5 py-0.5 rounded text-[9.5px] font-bold uppercase border ${
+                                              g.isTopThree
+                                                ? "bg-amber-400/20 text-amber-300 border-amber-400/40"
+                                                : "bg-emerald-950 text-emerald-300 border-emerald-700/60"
+                                            }`}
+                                          >
+                                            {g.isTopThree ? "★ " : ""}
                                             {g.area}
                                           </span>
-                                          <span className="text-emerald-100 line-clamp-1">{g.text}</span>
+                                          <span className="text-emerald-100 leading-snug break-words">
+                                            {g.text}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : member.top_three_goals && member.top_three_goals.length > 0 ? (
+                                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                                      {member.top_three_goals.map((g, idx) => (
+                                        <div key={idx} className="flex items-start gap-1.5 text-xs">
+                                          <span className="shrink-0 px-1.5 py-0.5 rounded text-[9.5px] font-bold uppercase bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                                            ★ {g.area}
+                                          </span>
+                                          <span className="text-emerald-100 leading-snug break-words">{g.text}</span>
                                         </div>
                                       ))}
                                     </div>
