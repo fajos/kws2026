@@ -6,6 +6,7 @@ import {
   Sparkles,
   Heart,
   Sun,
+  Moon,
   Briefcase,
   Coins,
   Users,
@@ -41,6 +42,12 @@ import {
   Lock,
   Smartphone,
   CreditCard,
+  Settings,
+  ShieldCheck,
+  RefreshCw,
+  Palette,
+  RotateCcw,
+  ExternalLink,
 } from "lucide-react";
 import { getWeeksForMonth } from "@/lib/journalCalendar";
 
@@ -329,7 +336,7 @@ function createDefaultJournalState(year: number): JournalState {
 // -------------------------------------------------------------
 export default function JournalPage() {
   const [themeMode, setThemeMode] = useState<"linen" | "dark">("linen");
-  const [activeTab, setActiveTab] = useState<"year" | "breakdown" | "quarter" | "month" | "week" | "review">("year");
+  const [activeTab, setActiveTab] = useState<"year" | "breakdown" | "quarter" | "month" | "week" | "review" | "settings">("year");
   const [selectedArea, setSelectedArea] = useState<LifeArea>("Health and wellbeing");
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(1);
   const [selectedMonth, setSelectedMonth] = useState<number>(1);
@@ -407,10 +414,40 @@ export default function JournalPage() {
   const [paystackError, setPaystackError] = useState("");
   const [paymentSuccessMsg, setPaymentSuccessMsg] = useState("");
 
+  // Reset Journal Confirmation Modal
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  async function handleResetJournal() {
+    setResetLoading(true);
+    try {
+      const fresh = createDefaultJournalState(journalState.year);
+      setJournalState(fresh);
+      await triggerSave(fresh);
+      setShowResetModal(false);
+    } catch (err) {
+      console.error("Failed to reset journal:", err);
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
+  function handleThemeChange(mode: "linen" | "dark") {
+    setThemeMode(mode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("kws_journal_theme", mode);
+    }
+  }
 
   // 1. Initial Load: Check token & require authentication
   useEffect(() => {
+    const savedTheme = localStorage.getItem("kws_journal_theme") as "linen" | "dark" | null;
+    if (savedTheme === "linen" || savedTheme === "dark") {
+      setThemeMode(savedTheme);
+    }
+
     const savedToken = localStorage.getItem("kws_journal_token") || "";
 
     if (savedToken) {
@@ -432,6 +469,25 @@ export default function JournalPage() {
       }
     }
   }, []);
+
+  // Fetch reminder settings when Settings tab is activated
+  useEffect(() => {
+    if (token && activeTab === "settings") {
+      fetch("/api/journal/reminders", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.reminder) {
+            setReminderFreq(data.reminder.frequency || "disabled");
+            setReminderDay(data.reminder.day_of_week || "Monday");
+            setReminderTime(data.reminder.time_of_day || "08:00");
+            if (data.reminder.email) setReminderEmail(data.reminder.email);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [token, activeTab]);
 
   async function verifyPaystackPayment(ref: string) {
     try {
@@ -1279,11 +1335,22 @@ export default function JournalPage() {
 
             {/* Theme Toggle */}
             <button
-              onClick={() => setThemeMode(isDark ? "linen" : "dark")}
+              onClick={() => handleThemeChange(isDark ? "linen" : "dark")}
               className={`p-1.5 rounded-full border transition-all ${pillLight} hover:opacity-90`}
               title="Toggle Light / Dark Theme"
             >
               <SunMoon className="w-4 h-4" />
+            </button>
+
+            {/* Quick Settings Button */}
+            <button
+              onClick={() => setActiveTab("settings")}
+              className={`p-1.5 rounded-full border transition-all ${
+                activeTab === "settings" ? primaryBg : pillLight
+              } hover:opacity-90`}
+              title="Settings & Membership"
+            >
+              <Settings className="w-4 h-4" />
             </button>
 
             {/* User Account / Sync Status */}
@@ -1418,6 +1485,7 @@ export default function JournalPage() {
                 { id: "month", label: "Month Plan", icon: Calendar },
                 { id: "week", label: "Weekly Planner", icon: Clock },
                 { id: "review", label: "Month in Review", icon: CheckCircle2 },
+                { id: "settings", label: "Settings", icon: Settings },
               ].map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -1439,7 +1507,7 @@ export default function JournalPage() {
             </div>
 
             {/* Life Area Quick Dropdown for sub-views */}
-            {activeTab !== "year" && (
+            {activeTab !== "year" && activeTab !== "settings" && (
               <div className="flex items-center gap-2 pl-3 border-l border-slate-300 dark:border-slate-700">
                 <span className="text-xs opacity-60 hidden md:inline">Goal:</span>
                 <select
@@ -2566,6 +2634,515 @@ export default function JournalPage() {
             </div>
           </div>
         )}
+
+        {/* ----------------------------------------------------------- */}
+        {/* TAB 7: SETTINGS & PREFERENCES                               */}
+        {/* ----------------------------------------------------------- */}
+        {activeTab === "settings" && (
+          <div className="space-y-6 pb-12 animate-fadeIn">
+            {/* Header / Intro Card */}
+            <div className={`p-6 rounded-2xl border ${cardBg} shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4`}>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full ${pillLight}`}>
+                    Preferences &amp; Account
+                  </span>
+                  <span className="text-xs opacity-50">• {journalState.year} Edition</span>
+                </div>
+                <h2 className="font-serif font-bold text-2xl tracking-tight">Settings &amp; Appearance</h2>
+                <p className="text-xs sm:text-sm opacity-70 mt-1 max-w-xl leading-relaxed">
+                  Customize themes, manage your subscription status, configure email reminders, and maintain your cloud account.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 self-start md:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setShowYearPicker(true)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${pillLight} hover:scale-105`}
+                >
+                  <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Year: {journalState.year}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* SECTION 1: MEMBERSHIP & SUBSCRIPTION STATUS */}
+            <div className={`p-6 rounded-2xl border ${cardBg} shadow-sm space-y-4`}>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${user?.is_pro ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40" : "bg-amber-500/20 text-amber-500 border border-amber-500/40"}`}>
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif font-bold text-base leading-snug">Membership &amp; Subscription</h3>
+                    <p className="text-xs opacity-60">Manage your Pro access across web and mobile</p>
+                  </div>
+                </div>
+                <span className={`text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider border ${user?.is_pro ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/40" : "bg-slate-500/15 text-slate-400 border-slate-500/30"}`}>
+                  {user?.is_pro ? "★ Pro Active" : "Free Starter"}
+                </span>
+              </div>
+
+              {user?.is_pro ? (
+                /* Pro Member Status View */
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <ShieldCheck className="w-6 h-6 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <span>FRA Journal Pro Active</span>
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                            Annual Plan
+                          </span>
+                        </h4>
+                        <p className="text-xs text-emerald-600 dark:text-emerald-200/80 mt-1">
+                          Billing Channel:{" "}
+                          <strong>
+                            {user.subscription?.platform === "paystack_web"
+                              ? "Paystack Web Checkout"
+                              : user.subscription?.platform === "apple_iap"
+                              ? "Apple App Store (iOS)"
+                              : user.subscription?.platform === "google_play"
+                              ? "Google Play Store (Android)"
+                              : "Cloud Subscription"}
+                          </strong>
+                        </p>
+                        {user.subscription?.current_period_end && (
+                          <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-300 mt-1.5">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>
+                              Renews / Expires:{" "}
+                              <strong>
+                                {new Date(user.subscription.current_period_end).toLocaleDateString(undefined, {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                })}
+                              </strong>
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => fetchUserProfile(token)}
+                      className="px-3.5 py-2 rounded-xl text-xs font-semibold border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-500/20 transition-colors flex items-center justify-center gap-1.5 shrink-0 self-start sm:self-auto"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Refresh Status</span>
+                    </button>
+                  </div>
+
+                  {/* Active Benefits Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div className="flex items-center gap-2 text-xs opacity-90 p-2.5 rounded-lg border border-slate-200/40 dark:border-slate-800/60">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Unlimited AI Goal Cascading &amp; Decomposition</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs opacity-90 p-2.5 rounded-lg border border-slate-200/40 dark:border-slate-800/60">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Real-time multi-device cloud sync (Web + Mobile)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs opacity-90 p-2.5 rounded-lg border border-slate-200/40 dark:border-slate-800/60">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Scheduled weekly &amp; monthly email check-ins</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs opacity-90 p-2.5 rounded-lg border border-slate-200/40 dark:border-slate-800/60">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Printable annual keepsake export</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Free Starter Plan View with Paystack Web Checkout + Mobile Options */
+                <div className="space-y-4">
+                  <p className="text-xs sm:text-sm opacity-80 leading-relaxed">
+                    You are currently using the <strong>Free Starter Plan</strong>. Upgrade to <strong>FRA Journal Pro</strong> to unlock unlimited AI goal decomposition, automated email reminders, multi-device cloud synchronization, and printable annual keepsakes.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Paystack Web Checkout Card */}
+                    <div className="p-4 rounded-xl border border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent space-y-3 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1.5">
+                            <CreditCard className="w-4 h-4 text-amber-500" />
+                            Option 1: Web Checkout
+                          </span>
+                          <span className="text-xs font-extrabold text-amber-500 bg-amber-400/20 px-2 py-0.5 rounded">
+                            ₦10,000 / yr
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm">Subscribe via Paystack</h4>
+                        <p className="text-xs opacity-75 mt-1 leading-relaxed">
+                          Instant card payment, bank transfer, or USSD checkout directly in your browser. Active on web and mobile instantly.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={paystackLoading}
+                        onClick={handlePaystackCheckout}
+                        className="w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-linear-to-r from-amber-400 via-yellow-300 to-amber-400 text-emerald-950 hover:brightness-105 transition-all shadow-md flex items-center justify-center gap-2"
+                      >
+                        {paystackLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-emerald-950" />
+                            <span>Connecting to Paystack...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4 text-emerald-950" />
+                            <span>Pay ₦10,000 with Paystack</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Mobile App Subscription Card */}
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-500/5 space-y-3 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold opacity-80 uppercase tracking-wider flex items-center gap-1.5">
+                            <Smartphone className="w-4 h-4 text-slate-400" />
+                            Option 2: Mobile In-App
+                          </span>
+                          <span className="text-xs font-extrabold opacity-90 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700">
+                            $6.99 / yr
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm">Subscribe via App Store</h4>
+                        <p className="text-xs opacity-75 mt-1 leading-relaxed">
+                          Subscribe inside the <strong>FRA E-Journal</strong> app on Apple App Store or Google Play. Log in with the same email (<strong>{user?.email}</strong>) on web and your Pro status unlocks here automatically.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => fetchUserProfile(token)}
+                          className={`w-full py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${pillLight}`}
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Check Subscribed Status</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* SECTION 2: APPEARANCE & VISUAL THEMES */}
+            <div className={`p-6 rounded-2xl border ${cardBg} shadow-sm space-y-4`}>
+              <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div className="w-8 h-8 rounded-full bg-amber-400/15 border border-amber-400/30 flex items-center justify-center text-amber-500">
+                  <Palette className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-base leading-snug">App Appearance &amp; Theme</h3>
+                  <p className="text-xs opacity-60">Choose an aesthetic that matches your journaling mood</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Theme 1: Warm Linen */}
+                <div
+                  onClick={() => handleThemeChange("linen")}
+                  className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex flex-col justify-between ${
+                    themeMode === "linen"
+                      ? "border-amber-500 bg-amber-500/5 shadow-md"
+                      : "border-slate-200 dark:border-slate-800 hover:border-amber-500/50"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Sun className="w-4 h-4 text-amber-600" />
+                        <h4 className="font-bold text-sm">Warm Linen Elegance</h4>
+                      </div>
+                      {themeMode === "linen" && (
+                        <span className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs opacity-75 leading-relaxed">
+                      Warm parchment tones, classic editorial serif typography, and soft gold accents. Ideal for daytime journaling.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-200/50 dark:border-slate-800/50">
+                    <span className="text-[10px] uppercase font-bold opacity-60">Palette:</span>
+                    <div className="w-5 h-5 rounded-md border border-slate-300" style={{ backgroundColor: "#FAF6F0" }} title="#FAF6F0" />
+                    <div className="w-5 h-5 rounded-md" style={{ backgroundColor: "#7A283C" }} title="#7A283C" />
+                    <div className="w-5 h-5 rounded-md" style={{ backgroundColor: "#C5A880" }} title="#C5A880" />
+                    <div className="w-5 h-5 rounded-md" style={{ backgroundColor: "#2B1C22" }} title="#2B1C22" />
+                  </div>
+                </div>
+
+                {/* Theme 2: Midnight Obsidian */}
+                <div
+                  onClick={() => handleThemeChange("dark")}
+                  className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex flex-col justify-between ${
+                    themeMode === "dark"
+                      ? "border-amber-400 bg-amber-400/5 shadow-md"
+                      : "border-slate-200 dark:border-slate-800 hover:border-amber-400/50"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Moon className="w-4 h-4 text-amber-400" />
+                        <h4 className="font-bold text-sm">Midnight Obsidian</h4>
+                      </div>
+                      {themeMode === "dark" && (
+                        <span className="w-5 h-5 rounded-full bg-amber-400 text-emerald-950 flex items-center justify-center">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs opacity-75 leading-relaxed">
+                      Deep obsidian dark surfaces with soft contrast and gold accents. Calm, distraction-free night focus.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-200/50 dark:border-slate-800/50">
+                    <span className="text-[10px] uppercase font-bold opacity-60">Palette:</span>
+                    <div className="w-5 h-5 rounded-md border border-slate-700" style={{ backgroundColor: "#121216" }} title="#121216" />
+                    <div className="w-5 h-5 rounded-md" style={{ backgroundColor: "#1C1C24" }} title="#1C1C24" />
+                    <div className="w-5 h-5 rounded-md" style={{ backgroundColor: "#E5B8C2" }} title="#E5B8C2" />
+                    <div className="w-5 h-5 rounded-md" style={{ backgroundColor: "#F4F0E8" }} title="#F4F0E8" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 3: EMAIL CADENCE & REMINDERS */}
+            <div className={`p-6 rounded-2xl border ${cardBg} shadow-sm space-y-4`}>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                    <Bell className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif font-bold text-base leading-snug">Cadence &amp; Email Reminders</h3>
+                    <p className="text-xs opacity-60">Automated check-ins delivered directly to your inbox</p>
+                  </div>
+                </div>
+                {!user?.is_pro && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                    ★ Pro Feature
+                  </span>
+                )}
+              </div>
+
+              {reminderMsg && (
+                <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                  <span>{reminderMsg}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 opacity-70">
+                    Cadence Frequency
+                  </label>
+                  <select
+                    value={reminderFreq}
+                    onChange={(e) => setReminderFreq(e.target.value as any)}
+                    className={`w-full p-2.5 rounded-xl border text-xs font-semibold outline-none ${cardBg}`}
+                  >
+                    <option value="disabled">Disabled</option>
+                    <option value="weekly">Weekly Check-in</option>
+                    <option value="monthly">Monthly Review</option>
+                    <option value="daily">Daily Reflection</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 opacity-70">
+                    Day of the Week
+                  </label>
+                  <select
+                    disabled={reminderFreq === "disabled" || reminderFreq === "daily"}
+                    value={reminderDay}
+                    onChange={(e) => setReminderDay(e.target.value)}
+                    className={`w-full p-2.5 rounded-xl border text-xs font-semibold outline-none ${cardBg} disabled:opacity-40`}
+                  >
+                    <option value="Monday">Monday (Start of Week)</option>
+                    <option value="Sunday">Sunday (Planning Cadence)</option>
+                    <option value="Friday">Friday (Wrap-up)</option>
+                    <option value="Wednesday">Wednesday (Mid-week)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 opacity-70">
+                    Delivery Time (UTC+1)
+                  </label>
+                  <input
+                    type="time"
+                    disabled={reminderFreq === "disabled"}
+                    value={reminderTime}
+                    onChange={(e) => setReminderTime(e.target.value)}
+                    className={`w-full p-2.5 rounded-xl border text-xs font-semibold outline-none ${cardBg} disabled:opacity-40`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 opacity-70">
+                    Recipient Email
+                  </label>
+                  <input
+                    type="email"
+                    value={reminderEmail || user?.email || ""}
+                    onChange={(e) => setReminderEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className={`w-full p-2.5 rounded-xl border text-xs outline-none ${cardBg}`}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={reminderLoading}
+                  onClick={() => handleSaveReminders(false)}
+                  className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm ${primaryBg}`}
+                >
+                  {reminderLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Save className="w-3.5 h-3.5" />
+                  )}
+                  <span>Save Reminder Preferences</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={reminderLoading || reminderFreq === "disabled"}
+                  onClick={() => handleSaveReminders(true)}
+                  className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${pillLight} disabled:opacity-40`}
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send Test Email Now</span>
+                </button>
+              </div>
+            </div>
+
+            {/* SECTION 4: CLOUD ACCOUNT & SYNC */}
+            <div className={`p-6 rounded-2xl border ${cardBg} shadow-sm space-y-4`}>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <Cloud className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif font-bold text-base leading-snug">User Profile &amp; Cloud Sync</h3>
+                    <p className="text-xs opacity-60">Connected account and data backup status</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full ${syncStatus === "synced" ? "bg-emerald-400" : syncStatus === "saving" ? "bg-amber-400 animate-pulse" : "bg-slate-400"}`} />
+                  <span className="text-xs font-semibold capitalize opacity-80">{syncStatus}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-slate-500/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-400/20 text-amber-500 border border-amber-400/30 flex items-center justify-center font-bold text-base font-serif">
+                    {user?.full_name ? user.full_name.slice(0, 2).toUpperCase() : "ME"}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm leading-snug">{user?.full_name || "Journal User"}</h4>
+                    <p className="text-xs opacity-70">{user?.email}</p>
+                    <div className="mt-1">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${pillLight}`}>
+                        ★ {user?.membership_tag || (user?.is_kws_member ? "Kingdom Wealth Summit Member" : "FRA Journal Member")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => triggerSave(journalState)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all ${pillLight}`}
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Sync to Cloud</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="px-3.5 py-2 rounded-xl text-xs font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-1.5"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Log Out</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 5: DATA MANAGEMENT & DANGER ZONE */}
+            <div className={`p-6 rounded-2xl border border-red-500/20 shadow-sm space-y-4 ${cardBg}`}>
+              <div className="flex items-center gap-2.5 pb-3 border-b border-red-500/20 text-red-400">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                <div>
+                  <h3 className="font-serif font-bold text-base leading-snug text-red-500">
+                    Data Management &amp; Danger Zone
+                  </h3>
+                  <p className="text-xs opacity-70">Actions that modify or reset your journal state</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200/60 dark:border-slate-800/60 gap-3">
+                  <div>
+                    <h4 className="font-bold text-xs uppercase tracking-wider">Reset Current Year Data</h4>
+                    <p className="text-xs opacity-70 mt-0.5">
+                      Clear all goals, milestones, reflections, and weekly plans for {journalState.year} back to template defaults. Other years will remain intact.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowResetModal(true)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold border border-amber-500/40 text-amber-500 hover:bg-amber-500/10 transition-colors flex items-center gap-1.5 shrink-0 self-start sm:self-auto"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Reset {journalState.year} Goals</span>
+                  </button>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-red-500/30 bg-red-500/5 gap-3">
+                  <div>
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-red-500">
+                      Permanently Delete Account &amp; All Cloud Data
+                    </h4>
+                    <p className="text-xs opacity-70 mt-0.5">
+                      Irreversibly delete your account, authentication credentials, and all multi-year journals stored on our servers.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteAccountModal(true)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-sm transition-all flex items-center gap-1.5 shrink-0 self-start sm:self-auto"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Account</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* ------------------------------------------------------------- */}
@@ -3273,6 +3850,66 @@ export default function JournalPage() {
               >
                 {deleteAccountLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                 <span>Delete Account Forever</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL: RESET JOURNAL DATA CONFIRMATION                        */}
+      {/* ------------------------------------------------------------- */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade">
+          <div className={`w-full max-w-md p-6 rounded-2xl border shadow-2xl ${cardBg}`}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 text-amber-500">
+              <div className="flex items-center gap-2">
+                <RotateCcw className="w-5 h-5 text-amber-500" />
+                <h3 className="font-serif font-bold text-lg text-slate-900 dark:text-white">
+                  Reset {journalState.year} Journal Goals?
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowResetModal(false)}
+                className="p-1 opacity-60 hover:opacity-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-3">
+              <p className="text-sm opacity-90 leading-relaxed">
+                Are you sure you want to reset all your goals, milestones, reflections, and weekly plans for <strong className="text-amber-500">{journalState.year}</strong>?
+              </p>
+              <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs text-amber-600 dark:text-amber-400 space-y-1">
+                <div className="font-bold">⚠️ Fresh Start Notice:</div>
+                <p>
+                  This will restore the standard 8 life areas to empty templates for {journalState.year}. Other journal years in your multi-year archive will remain safe.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                disabled={resetLoading}
+                onClick={() => setShowResetModal(false)}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-bold border ${pillLight}`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={resetLoading}
+                onClick={handleResetJournal}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-md transition-all flex items-center justify-center gap-1.5"
+              >
+                {resetLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-3.5 h-3.5" />
+                )}
+                <span>Reset {journalState.year} Goals</span>
               </button>
             </div>
           </div>
