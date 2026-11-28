@@ -4,29 +4,46 @@ import { upsertJournalSubscription } from "@/lib/db";
 
 export async function POST(request: Request) {
   try {
-    const paystackSecret = (process.env.PAYSTACK_SECRET_KEY || "").trim();
-    if (!paystackSecret) {
-      return NextResponse.json(
-        { error: "Paystack secret key not configured." },
-        { status: 500 }
-      );
-    }
+    const signature =
+      request.headers.get("x-paystack-signature") ||
+      request.headers.get("paystack-signature");
 
-    const signature = request.headers.get("x-paystack-signature");
     if (!signature) {
       return NextResponse.json(
-        { error: "Missing x-paystack-signature header." },
+        { error: "Missing Paystack signature header." },
         { status: 400 }
       );
     }
 
-    const bodyText = await request.text();
-    const hash = crypto
-      .createHmac("sha512", paystackSecret)
-      .update(bodyText)
-      .digest("hex");
+    const secretCandidates = [
+      process.env.PAYSTACK_WEBHOOK_SECRET,
+      process.env.PAYSTACK_SECRET_KEY,
+    ]
+      .filter(Boolean)
+      .map((s) => s!.trim());
 
-    if (hash !== signature) {
+    if (secretCandidates.length === 0) {
+      return NextResponse.json(
+        { error: "Paystack webhook signing secret or key is not configured on server." },
+        { status: 500 }
+      );
+    }
+
+    const bodyText = await request.text();
+
+    let isValid = false;
+    for (const secret of secretCandidates) {
+      const hash = crypto
+        .createHmac("sha512", secret)
+        .update(bodyText)
+        .digest("hex");
+      if (hash === signature) {
+        isValid = true;
+        break;
+      }
+    }
+
+    if (!isValid) {
       return NextResponse.json({ error: "Invalid signature." }, { status: 401 });
     }
 
