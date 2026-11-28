@@ -49,6 +49,7 @@ import {
   Palette,
   RotateCcw,
   ExternalLink,
+  Archive,
 } from "lucide-react";
 import { getWeeksForMonth } from "@/lib/journalCalendar";
 
@@ -434,15 +435,23 @@ export default function JournalPage() {
 
   // State & Multi-Year
   const defaultYear = new Date().getFullYear();
+  const rollingYears = [defaultYear - 1, defaultYear, defaultYear + 1, defaultYear + 2];
   const [journalState, setJournalState] = useState<JournalState>(() => createDefaultJournalState(defaultYear));
-  const [availableYears, setAvailableYears] = useState<number[]>([
-    defaultYear - 1,
-    defaultYear,
-    defaultYear + 1,
-    defaultYear + 2,
-  ]);
+  const [availableYears, setAvailableYears] = useState<number[]>(rollingYears);
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [customYearInput, setCustomYearInput] = useState("");
+
+  const allKnownYears = Array.from(
+    new Set([
+      ...rollingYears,
+      ...availableYears,
+      ...Object.keys(journalState.yearsData || {}).map((y) => parseInt(y, 10)),
+    ])
+  ).filter((y) => !isNaN(y)).sort((a, b) => a - b);
+
+  const archivedYears = allKnownYears
+    .filter((y) => !rollingYears.includes(y))
+    .sort((a, b) => b - a);
 
   // Auth & Cloud Sync
   interface JournalUser {
@@ -675,7 +684,7 @@ export default function JournalPage() {
           setJournalState(data.state);
         }
         if (data.availableYears) {
-          setAvailableYears(data.availableYears);
+          setAvailableYears(Array.from(new Set([...rollingYears, ...data.availableYears])).sort((a, b) => a - b));
         }
         setSyncStatus("synced");
       }
@@ -1153,9 +1162,7 @@ export default function JournalPage() {
     };
 
     triggerSave(nextState);
-    if (!availableYears.includes(yr)) {
-      setAvailableYears([...availableYears, yr].sort((a, b) => a - b));
-    }
+    setAvailableYears((prev) => Array.from(new Set([...rollingYears, ...prev, yr])).sort((a, b) => a - b));
     setShowYearPicker(false);
   }
 
@@ -3195,7 +3202,87 @@ export default function JournalPage() {
               </div>
             </div>
 
-            {/* SECTION 5: DATA MANAGEMENT & DANGER ZONE */}
+            {/* SECTION 5: MULTI-YEAR JOURNALS & ARCHIVE */}
+            <div className={`p-6 rounded-2xl border ${cardBg} shadow-sm space-y-4`}>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-amber-400/15 border border-amber-400/30 flex items-center justify-center text-amber-500">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif font-bold text-base leading-snug">Multi-Year Journals &amp; Archive</h3>
+                    <p className="text-xs opacity-60">Rolling 4-year planning window &amp; preserved history</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowYearPicker(true)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${pillLight}`}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>Switch Year</span>
+                </button>
+              </div>
+
+              <p className="text-xs opacity-75 leading-relaxed">
+                Your journal maintains an active 4-year rolling window ({rollingYears[0]}–{rollingYears[rollingYears.length - 1]}). You can quickly switch between active years or open any past/future year from your cloud archive.
+              </p>
+
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wider opacity-60 mb-2">
+                  Active 4-Year Rolling Window
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {rollingYears.map((yr) => {
+                    const isAct = yr === journalState.year;
+                    const isNow = yr === defaultYear;
+                    return (
+                      <button
+                        key={yr}
+                        onClick={() => handleSelectYear(yr)}
+                        className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-0.5 ${
+                          isAct ? primaryBg : pillLight
+                        }`}
+                      >
+                        <span className="font-bold text-sm">{yr} Journal</span>
+                        {isNow && (
+                          <span className={`text-[10px] ${isAct ? "text-white/80" : "text-amber-500 font-semibold"}`}>
+                            (Current Year)
+                          </span>
+                        )}
+                        {isAct && !isNow && (
+                          <span className="text-[10px] text-white/80 font-semibold">(Active View)</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {archivedYears.length > 0 && (
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider opacity-60 mb-2">
+                    <Archive className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Historical Archive</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {archivedYears.map((yr) => (
+                      <button
+                        key={yr}
+                        onClick={() => handleSelectYear(yr)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                          yr === journalState.year ? primaryBg : pillLight
+                        }`}
+                      >
+                        {yr} Journal
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* SECTION 6: DATA MANAGEMENT & DANGER ZONE */}
             <div className={`p-6 rounded-2xl border border-red-500/20 shadow-sm space-y-4 ${cardBg}`}>
               <div className="flex items-center gap-2.5 pb-3 border-b border-red-500/20 text-red-400">
                 <AlertTriangle className="w-5 h-5 text-red-500" />
@@ -3265,50 +3352,85 @@ export default function JournalPage() {
               </button>
             </div>
 
-            <div className="py-4">
-              <div className="text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                Rolling 4-Year Window
-              </div>
-              <div className="grid grid-cols-4 gap-2 mb-4">
-                {availableYears.map((yr) => (
-                  <button
-                    key={yr}
-                    onClick={() => handleSelectYear(yr)}
-                    className={`py-3 rounded-xl text-center text-sm font-bold border transition-all ${
-                      yr === journalState.year ? primaryBg : pillLight
-                    }`}
-                  >
-                    <div>{yr}</div>
-                    {yr === new Date().getFullYear() && (
-                      <div className="text-[10px] opacity-70">(Now)</div>
-                    )}
-                  </button>
-                ))}
+            <div className="py-4 space-y-4">
+              <div>
+                <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
+                  <span>Rolling 4-Year Window</span>
+                  <span className="text-[10px] font-normal normal-case opacity-60">Active 4-year cycle</span>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {rollingYears.map((yr) => {
+                    const isAct = yr === journalState.year;
+                    const isNow = yr === defaultYear;
+                    return (
+                      <button
+                        key={yr}
+                        onClick={() => handleSelectYear(yr)}
+                        className={`py-3 rounded-xl text-center text-sm font-bold border transition-all ${
+                          isAct ? primaryBg : pillLight
+                        }`}
+                      >
+                        <div>{yr}</div>
+                        {isNow && (
+                          <div className={`text-[10px] ${isAct ? "text-white/80" : "text-amber-500 font-semibold"}`}>
+                            (Current)
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
+              {/* Archived Journals Section (if any past or future stored years exist outside the rolling window) */}
+              {archivedYears.length > 0 && (
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
+                    <Archive className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Archived &amp; Additional Journals</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {archivedYears.map((yr) => (
+                      <button
+                        key={yr}
+                        onClick={() => handleSelectYear(yr)}
+                        className={`py-2.5 rounded-xl text-center text-xs font-bold border transition-all ${
+                          yr === journalState.year ? primaryBg : pillLight
+                        }`}
+                      >
+                        {yr} Journal
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Jump to custom year */}
-              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2">
-                <input
-                  type="number"
-                  placeholder="Or enter year (e.g. 2029)..."
-                  value={customYearInput}
-                  onChange={(e) => setCustomYearInput(e.target.value)}
-                  className={`flex-1 p-2.5 rounded-xl border text-sm outline-none ${
-                    inputBg
-                  }`}
-                />
-                <button
-                  onClick={() => {
-                    const parsed = parseInt(customYearInput.trim(), 10);
-                    if (!isNaN(parsed) && parsed >= 2000 && parsed <= 2100) {
-                      handleSelectYear(parsed);
-                      setCustomYearInput("");
-                    }
-                  }}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-bold ${primaryBg}`}
-                >
-                  Jump
-                </button>
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 opacity-70">
+                  Open Any Year
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    placeholder="e.g. 2024 or 2029..."
+                    value={customYearInput}
+                    onChange={(e) => setCustomYearInput(e.target.value)}
+                    className={`flex-1 p-2.5 rounded-xl border text-sm outline-none ${inputBg}`}
+                  />
+                  <button
+                    onClick={() => {
+                      const parsed = parseInt(customYearInput.trim(), 10);
+                      if (!isNaN(parsed) && parsed >= 2000 && parsed <= 2100) {
+                        handleSelectYear(parsed);
+                        setCustomYearInput("");
+                      }
+                    }}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold ${primaryBg}`}
+                  >
+                    Open Year
+                  </button>
+                </div>
               </div>
             </div>
           </div>

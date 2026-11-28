@@ -34,10 +34,16 @@ export async function GET(request: Request) {
       }
     }
 
+    const currentYear = new Date().getFullYear();
+    const rollingWindow = [currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
+    const allAvailableYears = Array.from(
+      new Set([...rollingWindow, ...availableYears, year])
+    ).sort((a, b) => a - b);
+
     return jsonResponse({
       year,
       state: parsedState,
-      availableYears: Array.from(new Set([...availableYears, year])).sort((a, b) => a - b),
+      availableYears: allAvailableYears,
       updatedAt: entry?.updated_at || null,
     });
   } catch (error) {
