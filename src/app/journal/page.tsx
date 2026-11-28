@@ -7,6 +7,7 @@ import {
   Heart,
   Sun,
   Moon,
+  Feather,
   Briefcase,
   Coins,
   Users,
@@ -54,6 +55,94 @@ import { getWeeksForMonth } from "@/lib/journalCalendar";
 // -------------------------------------------------------------
 // Types & Constants
 // -------------------------------------------------------------
+export type ThemeKey = "warmPaper" | "pureLight" | "midnightDark" | "botanicalSage";
+
+export interface WebTheme {
+  name: string;
+  key: ThemeKey;
+  isDark: boolean;
+  desc: string;
+  bgMain: string;
+  cardBg: string;
+  subHeaderBg: string;
+  headerBg: string;
+  inputBg: string;
+  primaryText: string;
+  primaryBg: string;
+  pillLight: string;
+  navHoverBg: string;
+  swatches: string[];
+}
+
+export const WEB_THEMES: Record<ThemeKey, WebTheme> = {
+  pureLight: {
+    name: "Pure Minimalist Light",
+    key: "pureLight",
+    isDark: false,
+    desc: "Clean daylight white with crisp contrast and modern royal blue accents (Default).",
+    bgMain: "bg-[#F8FAFC] text-[#0F172A]",
+    cardBg: "bg-[#FFFFFF] border-[#E2E8F0]",
+    subHeaderBg: "bg-[#F1F5F9] border-[#E2E8F0]",
+    headerBg: "bg-[#F8FAFC]/90 border-[#E2E8F0]",
+    inputBg: "bg-[#F1F5F9] border-[#E2E8F0] text-[#0F172A]",
+    primaryText: "text-[#2563EB]",
+    primaryBg: "bg-[#2563EB] text-white hover:bg-[#1D4ED8]",
+    pillLight: "bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]",
+    navHoverBg: "hover:bg-[#E2E8F0]",
+    swatches: ["#F8FAFC", "#FFFFFF", "#2563EB", "#0D9488", "#0F172A"],
+  },
+  warmPaper: {
+    name: "Warm Linen Paper",
+    key: "warmPaper",
+    isDark: false,
+    desc: "The original physical journal look with dusty rose, warm taupe, and linen paper tones.",
+    bgMain: "bg-[#FAF7F2] text-[#3A312A]",
+    cardBg: "bg-[#FFFFFF] border-[#EAE3D9]",
+    subHeaderBg: "bg-[#FAF4EC] border-[#EAE3D9]",
+    headerBg: "bg-[#FAF7F2]/90 border-[#EAE3D9]",
+    inputBg: "bg-[#FAF5EE] border-[#EAE3D9] text-[#3A312A]",
+    primaryText: "text-[#8E5B67]",
+    primaryBg: "bg-[#8E5B67] text-white hover:bg-[#7D4F5A]",
+    pillLight: "bg-[#F5ECEE] text-[#8E5B67] border-[#EAE3D9]",
+    navHoverBg: "hover:bg-[#F2ECE4]",
+    swatches: ["#FAF7F2", "#FFFFFF", "#8E5B67", "#5E7761", "#3A312A"],
+  },
+  midnightDark: {
+    name: "Midnight Velvet Dark",
+    key: "midnightDark",
+    isDark: true,
+    desc: "Deep obsidian charcoal with luminous soft rose accents for calm evening writing.",
+    bgMain: "bg-[#131316] text-[#F4F4F6]",
+    cardBg: "bg-[#1C1C21] border-[#2E2E36]",
+    subHeaderBg: "bg-[#17171F] border-[#2E2E36]",
+    headerBg: "bg-[#131316]/90 border-[#2E2E36]",
+    inputBg: "bg-[#15151C] border-[#2E2E36] text-[#F4F4F6]",
+    primaryText: "text-[#D9899C]",
+    primaryBg: "bg-[#D9899C] text-[#121216] hover:bg-[#C9798C]",
+    pillLight: "bg-[#2C1D23] text-[#D9899C] border-[#44232C]",
+    navHoverBg: "hover:bg-[#252532]",
+    swatches: ["#131316", "#1C1C21", "#D9899C", "#7BA786", "#F4F4F6"],
+  },
+  botanicalSage: {
+    name: "Botanical Sage Calm",
+    key: "botanicalSage",
+    isDark: false,
+    desc: "Eucalyptus green and earthy bronze tones inspired by nature and tranquility.",
+    bgMain: "bg-[#F1F5F2] text-[#1E2C22]",
+    cardBg: "bg-[#FFFFFF] border-[#D7DFD8]",
+    subHeaderBg: "bg-[#E5EDE7] border-[#D7DFD8]",
+    headerBg: "bg-[#F1F5F2]/90 border-[#D7DFD8]",
+    inputBg: "bg-[#EAF1EC] border-[#D7DFD8] text-[#1E2C22]",
+    primaryText: "text-[#3F6149]",
+    primaryBg: "bg-[#3F6149] text-white hover:bg-[#34513C]",
+    pillLight: "bg-[#E8EFEA] text-[#3F6149] border-[#D7DFD8]",
+    navHoverBg: "hover:bg-[#DFE7E1]",
+    swatches: ["#F1F5F2", "#FFFFFF", "#3F6149", "#8C674D", "#1E2C22"],
+  },
+};
+
+export const THEME_CYCLE_ORDER: ThemeKey[] = ["warmPaper", "pureLight", "midnightDark", "botanicalSage"];
+
 export type PredefinedLifeArea =
   | "Personal growth"
   | "Health and wellbeing"
@@ -335,7 +424,7 @@ function createDefaultJournalState(year: number): JournalState {
 // Main Journal Web App Component
 // -------------------------------------------------------------
 export default function JournalPage() {
-  const [themeMode, setThemeMode] = useState<"linen" | "dark">("linen");
+  const [themeMode, setThemeMode] = useState<ThemeKey>("warmPaper");
   const [activeTab, setActiveTab] = useState<"year" | "breakdown" | "quarter" | "month" | "week" | "review" | "settings">("year");
   const [selectedArea, setSelectedArea] = useState<LifeArea>("Health and wellbeing");
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(1);
@@ -434,18 +523,28 @@ export default function JournalPage() {
     }
   }
 
-  function handleThemeChange(mode: "linen" | "dark") {
+  function handleThemeChange(mode: ThemeKey) {
     setThemeMode(mode);
     if (typeof window !== "undefined") {
       localStorage.setItem("kws_journal_theme", mode);
     }
   }
 
+  function handleCycleTheme() {
+    const currentIndex = THEME_CYCLE_ORDER.indexOf(themeMode);
+    const nextIndex = (currentIndex + 1) % THEME_CYCLE_ORDER.length;
+    handleThemeChange(THEME_CYCLE_ORDER[nextIndex]);
+  }
+
   // 1. Initial Load: Check token & require authentication
   useEffect(() => {
-    const savedTheme = localStorage.getItem("kws_journal_theme") as "linen" | "dark" | null;
-    if (savedTheme === "linen" || savedTheme === "dark") {
+    const savedTheme = localStorage.getItem("kws_journal_theme");
+    if (savedTheme === "pureLight" || savedTheme === "warmPaper" || savedTheme === "midnightDark" || savedTheme === "botanicalSage") {
       setThemeMode(savedTheme);
+    } else if (savedTheme === "linen") {
+      setThemeMode("warmPaper");
+    } else if (savedTheme === "dark") {
+      setThemeMode("midnightDark");
     }
 
     const savedToken = localStorage.getItem("kws_journal_token") || "";
@@ -1061,12 +1160,16 @@ export default function JournalPage() {
   }
 
   // Active Theme Styles
-  const isDark = themeMode === "dark";
-  const bgMain = isDark ? "bg-[#121216] text-[#F4F0E8]" : "bg-[#FBF8F3] text-[#2B1C22]";
-  const cardBg = isDark ? "bg-[#1C1C24] border-[#2E2E3A]" : "bg-[#FFFDF9] border-[#E8DFD8]";
-  const primaryText = isDark ? "text-[#E5B8C2]" : "text-[#7A283C]";
-  const primaryBg = isDark ? "bg-[#E5B8C2] text-[#121216]" : "bg-[#7A283C] text-white";
-  const pillLight = isDark ? "bg-[#2B1C22] text-[#E5B8C2] border-[#44232C]" : "bg-[#FAF4EB] text-[#7A283C] border-[#F0E4D8]";
+  const currentTheme = WEB_THEMES[themeMode] || WEB_THEMES.warmPaper;
+  const isDark = currentTheme.isDark;
+  const bgMain = currentTheme.bgMain;
+  const cardBg = currentTheme.cardBg;
+  const primaryText = currentTheme.primaryText;
+  const primaryBg = currentTheme.primaryBg;
+  const pillLight = currentTheme.pillLight;
+  const inputBg = currentTheme.inputBg;
+  const subHeaderBg = currentTheme.subHeaderBg;
+  const headerBg = currentTheme.headerBg;
 
   const activeAreas = getActiveGoalAreas(journalState);
   const currentGoal = journalState.goals[selectedArea] || (activeAreas[0] ? journalState.goals[activeAreas[0].key] : null) || createDefaultGoalEntry(selectedArea, false, journalState.year);
@@ -1116,9 +1219,9 @@ export default function JournalPage() {
             ← KWS 2026 Home
           </Link>
           <button
-            onClick={() => setThemeMode(isDark ? "linen" : "dark")}
+            onClick={handleCycleTheme}
             className={`p-1.5 rounded-full border transition-all ${pillLight}`}
-            title="Toggle Theme"
+            title={`Current theme: ${currentTheme.name}. Click to switch theme`}
           >
             <SunMoon className="w-4 h-4" />
           </button>
@@ -1164,7 +1267,7 @@ export default function JournalPage() {
             </div>
 
             {/* Mode Switcher Tabs */}
-            <div className={`flex rounded-xl p-1 mb-5 border ${isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"}`}>
+            <div className={`flex rounded-xl p-1 mb-5 border ${inputBg}`}>
               <button
                 type="button"
                 onClick={() => {
@@ -1210,7 +1313,7 @@ export default function JournalPage() {
                     onChange={(e) => setAuthFullName(e.target.value)}
                     placeholder="e.g. Samuel Adeyemi"
                     className={`w-full p-3 rounded-xl border text-sm outline-none ${
-                      isDark ? "bg-[#15151C] border-[#2E2E3A] text-white" : "bg-[#FAF8F5] border-[#E8DFD8] text-[#2B1C22]"
+                      inputBg
                     }`}
                   />
                 </div>
@@ -1227,7 +1330,7 @@ export default function JournalPage() {
                   onChange={(e) => setAuthEmail(e.target.value)}
                   placeholder="name@example.com"
                   className={`w-full p-3 rounded-xl border text-sm outline-none ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A] text-white" : "bg-[#FAF8F5] border-[#E8DFD8] text-[#2B1C22]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -1243,7 +1346,7 @@ export default function JournalPage() {
                   onChange={(e) => setAuthPassword(e.target.value)}
                   placeholder="••••••••"
                   className={`w-full p-3 rounded-xl border text-sm outline-none ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A] text-white" : "bg-[#FAF8F5] border-[#E8DFD8] text-[#2B1C22]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -1279,7 +1382,7 @@ export default function JournalPage() {
       {/* ------------------------------------------------------------- */}
       {/* Top Navigation & App Header                                   */}
       {/* ------------------------------------------------------------- */}
-      <header className={`sticky top-0 z-40 border-b backdrop-blur-md ${isDark ? "bg-[#121216]/90 border-[#2E2E3A]" : "bg-[#FBF8F3]/90 border-[#E8DFD8]"}`}>
+      <header className={`sticky top-0 z-40 border-b backdrop-blur-md ${headerBg}`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Logo / Summit Home */}
           <div className="flex items-center gap-3">
@@ -1335,9 +1438,9 @@ export default function JournalPage() {
 
             {/* Theme Toggle */}
             <button
-              onClick={() => handleThemeChange(isDark ? "linen" : "dark")}
+              onClick={handleCycleTheme}
               className={`p-1.5 rounded-full border transition-all ${pillLight} hover:opacity-90`}
-              title="Toggle Light / Dark Theme"
+              title={`Current theme: ${currentTheme.name}. Click to switch theme`}
             >
               <SunMoon className="w-4 h-4" />
             </button>
@@ -1474,7 +1577,7 @@ export default function JournalPage() {
       {/* ------------------------------------------------------------- */}
       {/* Sub-Header & Navigation Tabs                                  */}
       {/* ------------------------------------------------------------- */}
-      <div className={`border-b ${isDark ? "border-[#2E2E3A] bg-[#17171F]" : "border-[#E8DFD8] bg-[#FAF6F0]"}`}>
+      <div className={`border-b ${subHeaderBg}`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between py-3 overflow-x-auto no-scrollbar gap-2 sm:gap-4">
             <div className="flex items-center gap-1 sm:gap-2">
@@ -1496,7 +1599,7 @@ export default function JournalPage() {
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
                       isActive
                         ? `${primaryBg} shadow-sm`
-                        : `opacity-70 hover:opacity-100 ${isDark ? "hover:bg-[#252532]" : "hover:bg-[#F2ECE4]"}`
+                        : `opacity-70 hover:opacity-100 ${currentTheme.navHoverBg}`
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -1893,7 +1996,7 @@ export default function JournalPage() {
                   }}
                   placeholder="What is your primary goal in this area for the year?"
                   className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none leading-relaxed break-words ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -1915,7 +2018,7 @@ export default function JournalPage() {
                   }}
                   placeholder="Why is achieving this essential to your life and purpose this year?"
                   className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none leading-relaxed break-words ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -1937,7 +2040,7 @@ export default function JournalPage() {
                   }}
                   placeholder="Mentors, books, apps, habits, accountability partner..."
                   className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none leading-relaxed break-words ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -1971,7 +2074,7 @@ export default function JournalPage() {
                         }}
                         placeholder={`Specific outcome to achieve by end of Q${idx + 1}...`}
                         className={`w-full p-2.5 rounded-lg border text-xs outline-none resize-none font-sans min-h-[72px] leading-relaxed break-words ${
-                          isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                          inputBg
                         }`}
                       />
                     </div>
@@ -2032,7 +2135,7 @@ export default function JournalPage() {
                   }}
                   placeholder="e.g. Foundation & Keystone Habits"
                   className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none leading-relaxed break-words ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -2124,7 +2227,7 @@ export default function JournalPage() {
                               placeholder="Action target..."
                               className={`flex-1 p-1.5 rounded-lg border text-xs outline-none resize-none leading-relaxed break-words font-sans ${
                                 it.completed ? "line-through opacity-50" : ""
-                              } ${isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"}`}
+                              } ${inputBg}`}
                             />
                             <button
                               onClick={() => {
@@ -2269,7 +2372,7 @@ export default function JournalPage() {
                         placeholder="Key milestone for this month..."
                         className={`flex-1 p-2 rounded-lg border text-xs outline-none resize-none leading-relaxed break-words font-sans ${
                           kg.completed ? "line-through opacity-50" : ""
-                        } ${isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"}`}
+                        } ${inputBg}`}
                       />
                       <button
                         onClick={() => {
@@ -2321,7 +2424,7 @@ export default function JournalPage() {
                   }}
                   placeholder="Observations, mindset, and strategy for this month..."
                   className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -2430,7 +2533,7 @@ export default function JournalPage() {
                       }}
                       placeholder={`Focus for ${day.label}...`}
                       className={`w-full p-2.5 rounded-lg border text-xs outline-none resize-none font-sans min-h-[110px] leading-relaxed break-words whitespace-pre-wrap ${
-                        isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                        inputBg
                       }`}
                     />
                   </div>
@@ -2467,7 +2570,7 @@ export default function JournalPage() {
                   }}
                   placeholder="Items or mindset to carry forward into next week..."
                   className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none leading-relaxed break-words whitespace-pre-wrap ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -2532,7 +2635,7 @@ export default function JournalPage() {
                   }}
                   placeholder="Record your breakthroughs, victories, and fulfilled goals..."
                   className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -2560,7 +2663,7 @@ export default function JournalPage() {
                   }}
                   placeholder="What friction arose? Distractions, schedule conflicts, or unmet targets..."
                   className={`w-full p-3 rounded-xl border text-sm outline-none font-sans resize-none ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -2594,7 +2697,7 @@ export default function JournalPage() {
                     }}
                     placeholder="Key insight from this month..."
                     className={`w-full p-3 rounded-xl border text-sm outline-none resize-none leading-relaxed break-words font-sans ${
-                      isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                      inputBg
                     }`}
                   />
                 </div>
@@ -2626,7 +2729,7 @@ export default function JournalPage() {
                     }}
                     placeholder="Specific blessings or people..."
                     className={`w-full p-3 rounded-xl border text-sm outline-none resize-none leading-relaxed break-words font-sans ${
-                      isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                      inputBg
                     }`}
                   />
                 </div>
@@ -2845,80 +2948,81 @@ export default function JournalPage() {
                 </div>
                 <div>
                   <h3 className="font-serif font-bold text-base leading-snug">App Appearance &amp; Theme</h3>
-                  <p className="text-xs opacity-60">Choose an aesthetic that matches your journaling mood</p>
+                  <p className="text-xs opacity-60">Choose from the 4 visual themes matching the mobile app</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Theme 1: Warm Linen */}
-                <div
-                  onClick={() => handleThemeChange("linen")}
-                  className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex flex-col justify-between ${
-                    themeMode === "linen"
-                      ? "border-amber-500 bg-amber-500/5 shadow-md"
-                      : "border-slate-200 dark:border-slate-800 hover:border-amber-500/50"
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Sun className="w-4 h-4 text-amber-600" />
-                        <h4 className="font-bold text-sm">Warm Linen Elegance</h4>
+                {[
+                  {
+                    key: "pureLight" as const,
+                    title: "Pure Minimalist Light",
+                    desc: "Clean daylight white with crisp contrast and modern royal blue accents (Default).",
+                    icon: Sun,
+                    theme: WEB_THEMES.pureLight,
+                  },
+                  {
+                    key: "warmPaper" as const,
+                    title: "Warm Linen Paper",
+                    desc: "The original physical journal look with dusty rose, taupe, and warm linen tones.",
+                    icon: Feather,
+                    theme: WEB_THEMES.warmPaper,
+                  },
+                  {
+                    key: "midnightDark" as const,
+                    title: "Midnight Velvet Dark",
+                    desc: "Deep obsidian charcoal with luminous rose accents for calm evening writing.",
+                    icon: Moon,
+                    theme: WEB_THEMES.midnightDark,
+                  },
+                  {
+                    key: "botanicalSage" as const,
+                    title: "Botanical Sage Calm",
+                    desc: "Eucalyptus green and earthy bronze tones inspired by nature and tranquility.",
+                    icon: Palette,
+                    theme: WEB_THEMES.botanicalSage,
+                  },
+                ].map(({ key, title, desc, icon: IconComponent, theme: itemTheme }) => {
+                  const isSelected = themeMode === key;
+                  return (
+                    <div
+                      key={key}
+                      onClick={() => handleThemeChange(key)}
+                      className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex flex-col justify-between ${
+                        isSelected
+                          ? "border-amber-500 bg-amber-500/5 shadow-md ring-1 ring-amber-500/30"
+                          : "border-slate-200 dark:border-slate-800 hover:border-amber-500/50"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <IconComponent className="w-4 h-4 text-amber-500" />
+                            <h4 className="font-bold text-sm">{title}</h4>
+                          </div>
+                          {isSelected && (
+                            <span className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs opacity-75 leading-relaxed">{desc}</p>
                       </div>
-                      {themeMode === "linen" && (
-                        <span className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center">
-                          <Check className="w-3 h-3 stroke-[3]" />
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs opacity-75 leading-relaxed">
-                      Warm parchment tones, classic editorial serif typography, and soft gold accents. Ideal for daytime journaling.
-                    </p>
-                  </div>
 
-                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-200/50 dark:border-slate-800/50">
-                    <span className="text-[10px] uppercase font-bold opacity-60">Palette:</span>
-                    <div className="w-5 h-5 rounded-md border border-slate-300" style={{ backgroundColor: "#FAF6F0" }} title="#FAF6F0" />
-                    <div className="w-5 h-5 rounded-md" style={{ backgroundColor: "#7A283C" }} title="#7A283C" />
-                    <div className="w-5 h-5 rounded-md" style={{ backgroundColor: "#C5A880" }} title="#C5A880" />
-                    <div className="w-5 h-5 rounded-md" style={{ backgroundColor: "#2B1C22" }} title="#2B1C22" />
-                  </div>
-                </div>
-
-                {/* Theme 2: Midnight Obsidian */}
-                <div
-                  onClick={() => handleThemeChange("dark")}
-                  className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex flex-col justify-between ${
-                    themeMode === "dark"
-                      ? "border-amber-400 bg-amber-400/5 shadow-md"
-                      : "border-slate-200 dark:border-slate-800 hover:border-amber-400/50"
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Moon className="w-4 h-4 text-amber-400" />
-                        <h4 className="font-bold text-sm">Midnight Obsidian</h4>
+                      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-200/50 dark:border-slate-800/50">
+                        <span className="text-[10px] uppercase font-bold opacity-60">Palette:</span>
+                        {itemTheme.swatches.map((color, idx) => (
+                          <div
+                            key={idx}
+                            className="w-5 h-5 rounded-md border border-black/10 dark:border-white/10 shadow-2xs"
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                        ))}
                       </div>
-                      {themeMode === "dark" && (
-                        <span className="w-5 h-5 rounded-full bg-amber-400 text-emerald-950 flex items-center justify-center">
-                          <Check className="w-3 h-3 stroke-[3]" />
-                        </span>
-                      )}
                     </div>
-                    <p className="text-xs opacity-75 leading-relaxed">
-                      Deep obsidian dark surfaces with soft contrast and gold accents. Calm, distraction-free night focus.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-200/50 dark:border-slate-800/50">
-                    <span className="text-[10px] uppercase font-bold opacity-60">Palette:</span>
-                    <div className="w-5 h-5 rounded-md border border-slate-700" style={{ backgroundColor: "#121216" }} title="#121216" />
-                    <div className="w-5 h-5 rounded-md" style={{ backgroundColor: "#1C1C24" }} title="#1C1C24" />
-                    <div className="w-5 h-5 rounded-md" style={{ backgroundColor: "#E5B8C2" }} title="#E5B8C2" />
-                    <div className="w-5 h-5 rounded-md" style={{ backgroundColor: "#F4F0E8" }} title="#F4F0E8" />
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -3190,7 +3294,7 @@ export default function JournalPage() {
                   value={customYearInput}
                   onChange={(e) => setCustomYearInput(e.target.value)}
                   className={`flex-1 p-2.5 rounded-xl border text-sm outline-none ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
                 <button
@@ -3245,7 +3349,7 @@ export default function JournalPage() {
                     onChange={(e) => setAuthFullName(e.target.value)}
                     placeholder="Your name"
                     className={`w-full p-2.5 rounded-xl border text-sm outline-none ${
-                      isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                      inputBg
                     }`}
                   />
                 </div>
@@ -3262,7 +3366,7 @@ export default function JournalPage() {
                   onChange={(e) => setAuthEmail(e.target.value)}
                   placeholder="name@example.com"
                   className={`w-full p-2.5 rounded-xl border text-sm outline-none ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -3278,7 +3382,7 @@ export default function JournalPage() {
                   onChange={(e) => setAuthPassword(e.target.value)}
                   placeholder="••••••••"
                   className={`w-full p-2.5 rounded-xl border text-sm outline-none ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -3414,7 +3518,7 @@ export default function JournalPage() {
                   onChange={(e) => setReminderEmail(e.target.value)}
                   placeholder="your.email@example.com"
                   className={`w-full p-2.5 rounded-xl border text-sm outline-none ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -3521,7 +3625,7 @@ export default function JournalPage() {
                   onChange={(e) => setAiGoalText(e.target.value)}
                   placeholder="Enter your yearly goal statement..."
                   className={`w-full p-2.5 rounded-xl border text-sm outline-none font-sans ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -3657,7 +3761,7 @@ export default function JournalPage() {
                   }}
                   placeholder="e.g. Creative Project, Parenting, Real Estate"
                   className={`w-full p-2.5 rounded-xl border text-sm outline-none ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
@@ -3698,7 +3802,7 @@ export default function JournalPage() {
                   onChange={(e) => setNewGoalText(e.target.value)}
                   placeholder="What is your primary milestone or outcome for this year?"
                   className={`w-full p-2.5 rounded-xl border text-sm outline-none font-sans resize-none ${
-                    isDark ? "bg-[#15151C] border-[#2E2E3A]" : "bg-[#FAF8F5] border-[#E8DFD8]"
+                    inputBg
                   }`}
                 />
               </div>
